@@ -175,13 +175,14 @@ final class SettingsTests: XCTestCase {
         }
     }
 
-    func testTargetDetailNamesBrowserAccountAndFolder() {
+    /// The section heading names the browser, so the row doesn't.
+    func testTargetDetailNamesAccountAndFolder() {
         let target = Target(id: "chrome|Profile 3", browser: .chrome, profile: "Profile 3", name: "Work", email: "a@example.com")
-        XCTAssertEqual(TargetsTab.detail(target, found: true), "Chrome · a@example.com · Folder: Profile 3")
+        XCTAssertEqual(TargetsTab.detail(target, found: true), "a@example.com · Folder: Profile 3")
         let safari = Target(id: "safari|", browser: .safari, profile: nil, name: "Safari", email: nil)
-        XCTAssertEqual(TargetsTab.detail(safari, found: true), "Safari · No account")
+        XCTAssertEqual(TargetsTab.detail(safari, found: true), "No account")
         XCTAssertEqual(TargetsTab.detail(target, found: false),
-                       "Chrome · a@example.com · Folder: Profile 3 · Not found on this Mac")
+                       "a@example.com · Folder: Profile 3 · Not found on this Mac")
     }
 
     func testTargetMissingFromThisMacStaysListedButLeavesThePicker() throws {

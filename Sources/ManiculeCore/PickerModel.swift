@@ -31,7 +31,7 @@ public struct PickerModel: Sendable {
     public let more: [[Target]]
     /// The preselection when it is in the menu rather than the strip.
     public let moreHighlight: Target.ID?
-    public private(set) var selection: PickerSelection?
+    public private(set) var selection: PickerSelection? = nil
 
     /// The strip's targets, numbered 1–9 straight across the groups.
     public var pinned: [Target] { strip.flatMap { $0 } }
@@ -53,8 +53,8 @@ public struct PickerModel: Sendable {
             selection = .more
         } else if let first = pinned.first {
             selection = .target(first.id)
-        } else {
-            selection = more.contains { !$0.isEmpty } ? .more : nil
+        } else if moreIsEnabled {
+            selection = .more
         }
     }
 

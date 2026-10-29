@@ -182,7 +182,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         guard let model else { return }
         let menu = NSMenu()
         menu.autoenablesItems = false
-        let host = model.link.url.host()?.lowercased() ?? ""
+        let host = model.link.url.host?.lowercased() ?? ""  // as `Config.recordPick` keys its rule
         var highlightedItem: NSMenuItem?
         for group in model.more {
             guard let browser = group.first?.browser else { continue }
@@ -433,7 +433,6 @@ final class MoreTileView: StripTileView {
         didSet { toolTip = isEnabled ? "More profiles (0)" : "Every profile is pinned" }
     }
 }
-
 
 /// A borderless text button with a rounded background that brightens under the pointer.
 final class HoverButton: NSButton {

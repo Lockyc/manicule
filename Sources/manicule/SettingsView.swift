@@ -98,10 +98,12 @@ struct TargetsTab: View {
             Button { if let before { model.config.moveBrowser(browser, to: before) } } label: {
                 Label("Move \(browser.displayName) Up", systemImage: "chevron.up")
             }
+            .help("Move \(browser.displayName) up")
             .disabled(before == nil)
             Button { if let after { model.config.moveBrowser(browser, to: after) } } label: {
                 Label("Move \(browser.displayName) Down", systemImage: "chevron.down")
             }
+            .help("Move \(browser.displayName) down")
             .disabled(after == nil)
         }
         .labelStyle(.iconOnly)
@@ -144,8 +146,7 @@ struct TargetsTab: View {
     }
 
     static func detail(_ target: Target, found: Bool) -> String {
-        var parts = [target.browser.displayName]
-        parts.append(target.email ?? "No account")
+        var parts = [target.email ?? "No account"]
         if let profile = target.profile { parts.append("Folder: \(profile)") }
         if !found { parts.append("Not found on this Mac") }
         return parts.joined(separator: " · ")
