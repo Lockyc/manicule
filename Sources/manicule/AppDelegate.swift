@@ -2,20 +2,13 @@ import AppKit
 import ManiculeCore
 import os
 
-/// Stand-in until the picker panel lands: takes the preselected target, else cancels.
-final class StubPicker: Picking {
-    func show(_ link: IncomingLink, targets: [Target], preselected: Target.ID?,
-              completion: @escaping (PickerAction) -> Void) {
-        completion(preselected.map { .open($0, always: false) } ?? .cancel)
-    }
-}
-
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let log = Logger(subsystem: "com.lockyc.manicule", category: "app")
 
     private let store: ConfigStore
     private let launcher = Launcher()
-    private var picker: Picking = StubPicker()
+    private let picker = PickerPanel()
     private var queue = LinkQueue()
     private var discovered: [DiscoveredProfile] = []
     private var config: Config
@@ -74,7 +67,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .open(let id, let always):
             config.recordPick(link, target: id, always: always)
             config.recordOutcome(link, target: id)
-            if let target = config.targets.first(where: { $0.id == id }) { open(link, in: target) }
+            if let target = config.targets.first(where: { $0.id == id }) {
+                open(link, in: target)
+            } else {
+                Self.log.error("picked target \(id, privacy: .public) is not in the config")
+            }
         case .copy(let url):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(url.absoluteString, forType: .string)

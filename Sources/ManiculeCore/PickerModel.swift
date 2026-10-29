@@ -41,9 +41,4 @@ public struct PickerModel: Sendable {
             return nil
         }
     }
-
-    /// Selects a target directly (mouse hover); ignored when it is not in the strip.
-    public mutating func select(_ id: Target.ID) {
-        if targets.contains(where: { $0.id == id }) { selection = id }
-    }
 }
