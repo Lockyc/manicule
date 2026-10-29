@@ -12,8 +12,9 @@ instead of rules having to be written up front. The name is the printer's pointi
 
 ## Status
 
-In development: links route, the icon-strip picker, the ☞ menu-bar menu, Settings and the
-per-profile web-app launchers (`~/Applications/Manicule Launchers/`) work.
+Early (0.x): routing, the icon-strip picker, the ☞ menu-bar menu, Settings, the Velja import
+and the per-profile web-app launchers (`~/Applications/Manicule Launchers/`). What's next:
+[docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
 
 ## Install
 
