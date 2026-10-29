@@ -14,3 +14,23 @@ Deliberately deferred work. Remove an entry when it ships.
   for now. Unlock: revisit it; candidate routes are borrowing existing `gcloud` sign-ins or a
   dedicated OAuth client. It slots in as a routing step between "Remembered document" and
   "Picker".
+- **Source-app-only rules.** "Every link from this app → this target" can't be written: a rule
+  needs a condition with a value, and Velja rules with only a source app are skipped on import.
+  Deferred: a rule without a URL condition opens every link from that app unseen, so it should be
+  an explicit choice. Unlock: an "Any URL" matcher kind, shown as such in Settings and mapped from
+  Velja.
+- **Chrome profile colour in tiles.** A Chrome tile without an avatar picture is a circle in a
+  hue derived from the target id, not the profile's own colour. Deferred: the colour fields in
+  `Local State` (highlight vs theme, signed ARGB) need confirming on current Chrome. Unlock:
+  confirm the field and use it for the circle.
+- **Firefox profiles at absolute paths.** A profile with `IsRelative=0` is launched as
+  `<Firefox folder>/<Path>`, which is wrong for it. Deferred: only profiles created with a custom
+  location have it. Unlock: read `IsRelative` in discovery and launch with the absolute path.
+- **Login item.** Manicule doesn't start at login; macOS launches it when the first link
+  arrives. Deferred: launch-on-demand already routes every link; starting at login only puts the
+  ☞ menu up earlier. Unlock: an "Open at login" toggle in General backed by
+  `SMAppService.mainApp`.
+- **Wide picker strips.** The strip is one row of fixed-width tiles; past about 25 visible
+  targets it is wider than the screen and tiles fall off the edge. Deferred: the strip is meant
+  for a curated handful (nine have number keys). Unlock: someone showing that many — cap the
+  width and scroll, or wrap to a second row.

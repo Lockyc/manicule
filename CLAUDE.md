@@ -12,7 +12,8 @@ links:
 
 A native macOS (14+) menu-bar app that is the system default browser: every http, https and
 file (HTML document) link goes through it and it alone decides where the link opens; a `file`
-URL has no host, so it always reaches the picker. Other schemes are logged and dropped. Targets are browser **profiles**
+URL has no host, so it reaches the picker unless a non-host rule matches it. Other schemes are
+logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
 not just browsers. One Swift package, no Xcode project, no third-party dependencies.
 
@@ -39,14 +40,26 @@ thin AppKit shell. Anything testable without a window belongs in `ManiculeCore`.
 Evaluated in order; the first that resolves wins.
 
 1. **Account in the URL** — a Google URL carrying an email (`authuser=<email>`, `/u/<email>/`)
-   routes to the Chrome profile signed into that email (from `Local State`
-   `profile.info_cache.<dir>.user_name`, read at runtime). A numeric `/u/1/` index is not an
-   account and gets no built-in meaning.
+   routes to the target whose email matches: a Chrome or Chromium profile signed into it (from
+   `Local State` `profile.info_cache.<dir>.user_name`, read at runtime). A numeric `/u/1/` index
+   is not an account and gets no built-in meaning.
 2. **Rules** — URL matchers (host, path, query, contains, regex; all must hold) plus an optional
    source app → target. Ordered, first match wins, opens immediately. `⌥⏎` in the picker creates
    a host-suffix rule.
 3. **Remembered document** — a Google file ID the user has picked a profile for before.
 4. **Picker** — icon strip under the cursor, pre-selected on the last target chosen for the host.
+
+Only **available** targets count: found by this run's discovery, or in a browser whose profile
+file can't be read yet. Any other target is dangling in every step and left out of the strip;
+Settings still lists it, marked "Not found on this Mac".
+
+## Profiles
+
+macOS withholds Chrome's `Local State` and Firefox's `profiles.ini` until the user picks that
+exact folder in an open panel (Settings → General → Grant Access…); Chromium's is readable.
+Discovery runs at launch, when Settings opens and after a grant. Profiles found later merge into
+the config **hidden**; discovery refreshes emails but never renames, reorders, shows or removes a
+target.
 
 A Google file opens in the profile's web app when installed there:
 `open -na "Google Chrome" --args --profile-directory=<dir> --app-id=<id> --app-launch-url-for-shortcuts-menu-item=<url>`.
@@ -60,7 +73,9 @@ A Google file opens in the profile's web app when installed there:
 - No personal data in tracked code: targets, names, rules, remembered documents and history live
   in runtime config under Application Support, discovered from the browsers' own profile files.
 - Chrome's shared web-app shims are never touched; generated per-profile launchers live in
-  `~/Applications`.
+  `~/Applications/Manicule Launchers/`.
+- The config decodes across versions: every non-identity key of `Config`, `Rule`, `Target` and
+  `HistoryEntry` has a default, so an added or missing key never makes a config "corrupt".
 - Bundle id `com.lockyc.manicule` is fixed: default-browser registration is keyed to it.
 
 ## Branches and releases

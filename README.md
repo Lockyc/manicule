@@ -12,8 +12,24 @@ instead of rules having to be written up front. The name is the printer's pointi
 
 ## Status
 
-In development: links route, the icon-strip picker, the ☞ menu-bar menu and Settings work; the
-per-profile web-app launchers are not built yet.
+In development: links route, the icon-strip picker, the ☞ menu-bar menu, Settings and the
+per-profile web-app launchers (`~/Applications/Manicule Launchers/`) work.
+
+## Install
+
+Build from source with `just install`, which installs `/Applications/Manicule.app` and registers
+it with Launch Services. Needs macOS 14+ and the Swift 6 toolchain.
+
+## First run
+
+Click ☞ in the menu bar and open Settings.
+
+1. **General → Make Manicule the Default Browser** (macOS asks you to confirm).
+2. **General → Browser access** — click Grant Access… for each browser listed (Chrome, Firefox)
+   and then Open in the panel; macOS keeps their profile lists from Manicule until you do.
+3. **Targets** — tick "In picker" for the profiles you want in the picker strip and drag them
+   into order. Profiles found later arrive unticked.
+4. **General → Import rules from Velja**, if you are coming from Velja.
 
 ## Build & test
 
@@ -24,4 +40,4 @@ just bundle    # assemble .build/Manicule.app
 just install   # install to /Applications/Manicule.app and register with Launch Services
 ```
 
-Needs macOS 14+ and the Swift 6 toolchain. Architecture and conventions: [CLAUDE.md](CLAUDE.md).
+Architecture and conventions: [CLAUDE.md](CLAUDE.md).
