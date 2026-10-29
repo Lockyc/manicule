@@ -4,40 +4,87 @@ import Foundation
 public enum PickerKey: Equatable, Sendable {
     /// 1-based position in the strip.
     case digit(Int)
+    /// `0`: the ⋯ menu.
+    case more
     case enter, optionEnter, copy, escape, left, right
+}
+
+/// The highlighted position in the strip: a pinned target, or the ⋯ tile at its end.
+public enum PickerSelection: Equatable, Sendable {
+    case target(Target.ID)
+    case more
+}
+
+/// What a key leads to: the picker completes, or the ⋯ menu opens (the picker stays up).
+public enum PickerStep: Equatable, Sendable {
+    case finish(PickerAction)
+    /// `highlighted` is the preselected target when it is in the menu.
+    case showMore(highlighted: Target.ID?)
 }
 
 /// The picker's state and key handling, independent of any window.
 public struct PickerModel: Sendable {
     public let link: IncomingLink
-    public let targets: [Target]
-    /// The highlighted target: the preselection when it is in the strip, else the first.
-    public private(set) var selection: Target.ID?
+    /// Pinned targets, one group per browser.
+    public let strip: [[Target]]
+    /// Available targets that aren't pinned, one group per browser: the ⋯ menu.
+    public let more: [[Target]]
+    /// The preselection when it is in the menu rather than the strip.
+    public let moreHighlight: Target.ID?
+    public private(set) var selection: PickerSelection?
 
-    public init(link: IncomingLink, targets: [Target], preselected: Target.ID?) {
+    /// The strip's targets, numbered 1–9 straight across the groups.
+    public var pinned: [Target] { strip.flatMap { $0 } }
+    /// ⋯ is disabled when there is nothing under it.
+    public var moreIsEnabled: Bool { more.contains { !$0.isEmpty } }
+
+    /// Selects the preselection: its tile when pinned, ⋯ when it is in the menu, else the first
+    /// tile (or ⋯ when nothing is pinned).
+    public init(link: IncomingLink, strip: [[Target]], more: [[Target]], preselected: Target.ID?) {
         self.link = link
-        self.targets = targets
-        selection = targets.contains { $0.id == preselected } ? preselected : targets.first?.id
+        self.strip = strip
+        self.more = more
+        let pinned = strip.flatMap { $0 }
+        let inMore = more.joined().contains { $0.id == preselected }
+        moreHighlight = inMore ? preselected : nil
+        if let preselected, pinned.contains(where: { $0.id == preselected }) {
+            selection = .target(preselected)
+        } else if inMore {
+            selection = .more
+        } else if let first = pinned.first {
+            selection = .target(first.id)
+        } else {
+            selection = more.contains { !$0.isEmpty } ? .more : nil
+        }
     }
 
-    /// The action a key completes the picker with; nil when it only moves the selection or does nothing.
-    public mutating func handle(_ key: PickerKey) -> PickerAction? {
+    /// Positions the arrows move through.
+    private var positions: [PickerSelection] {
+        pinned.map { .target($0.id) } + (moreIsEnabled ? [.more] : [])
+    }
+
+    /// The step a key leads to; nil when it only moves the selection or does nothing.
+    public mutating func handle(_ key: PickerKey) -> PickerStep? {
         switch key {
         case .digit(let n):
-            guard targets.indices.contains(n - 1) else { return nil }
-            return .open(targets[n - 1].id, always: false)
-        case .enter:
-            return selection.map { .open($0, always: false) }
-        case .optionEnter:
-            return selection.map { .open($0, always: true) }
+            guard pinned.indices.contains(n - 1) else { return nil }
+            return .finish(.open(pinned[n - 1].id, always: false))
+        case .more:
+            return moreIsEnabled ? .showMore(highlighted: moreHighlight) : nil
+        case .enter, .optionEnter:
+            switch selection {
+            case .target(let id): return .finish(.open(id, always: key == .optionEnter))
+            case .more: return .showMore(highlighted: moreHighlight)
+            case nil: return nil
+            }
         case .copy:
-            return .copy(TrackingParameters.stripped(link.url))
+            return .finish(.copy(TrackingParameters.stripped(link.url)))
         case .escape:
-            return .cancel
+            return .finish(.cancel)
         case .left, .right:
-            guard let index = targets.firstIndex(where: { $0.id == selection }) else { return nil }
-            let moved = key == .left ? max(index - 1, 0) : min(index + 1, targets.count - 1)
-            selection = targets[moved].id
+            guard let index = positions.firstIndex(where: { $0 == selection }) else { return nil }
+            let moved = key == .left ? max(index - 1, 0) : min(index + 1, positions.count - 1)
+            selection = positions[moved]
             return nil
         }
     }

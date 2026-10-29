@@ -62,10 +62,15 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(d, .pick(preselected: p3.id))
     }
 
-    func testLastChoiceNotVisibleFallsToFirstVisible() {
+    /// An unpinned target is still in the picker, under ⋯, so a last choice there is preselected.
+    func testLastChoiceNotPinnedIsStillPreselected() {
         let d = Router.decide(link("https://example.com/a"),
                               state: state(last: ["example.com": saf.id], visible: [p3.id, ff.id]))
-        XCTAssertEqual(d, .pick(preselected: p3.id))
+        XCTAssertEqual(d, .pick(preselected: saf.id))
+    }
+
+    func testNothingPinnedPreselectsNothing() {
+        XCTAssertEqual(Router.decide(link("https://example.com/a"), state: state(visible: [])), .pick(preselected: nil))
     }
 
     func testDanglingTargetsFallThroughToPicker() {

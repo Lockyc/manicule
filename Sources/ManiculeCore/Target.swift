@@ -48,6 +48,19 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         return details
     }
 
+    /// One group per browser, in the order each browser first appears; order within a group kept.
+    public static func groupedByBrowser(_ targets: [Target]) -> [[Target]] {
+        var groups: [[Target]] = []
+        for target in targets {
+            if let index = groups.firstIndex(where: { $0.first?.browser == target.browser }) {
+                groups[index].append(target)
+            } else {
+                groups.append([target])
+            }
+        }
+        return groups
+    }
+
     /// `id` and `browser` are required; a missing name is the browser's.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)

@@ -23,12 +23,12 @@ final class SettingsEditsTests: XCTestCase {
         XCTAssertEqual(c.targets.count, 4, "hiding never removes the target")
     }
 
-    func testMovingTargetsReordersVisibleToo() {
+    func testMovingProfilesReordersVisibleToo() {
         var c = config()
-        c.moveTargets(fromOffsets: [2], toOffset: 0)
+        c.moveProfiles(of: .chrome, fromOffsets: [2], toOffset: 0)
         XCTAssertEqual(c.targets.map(\.id), ["c", "a", "b", "d"])
         XCTAssertEqual(c.visible, ["c", "a"])
-        c.moveTargets(fromOffsets: [0, 1], toOffset: 4)
+        c.moveProfiles(of: .chrome, fromOffsets: [0, 1], toOffset: 4)
         XCTAssertEqual(c.targets.map(\.id), ["b", "d", "c", "a"])
         XCTAssertEqual(c.visible, ["c", "a"])
     }

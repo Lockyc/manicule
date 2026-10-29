@@ -18,18 +18,24 @@ public struct HistoryEntry: Codable, Equatable, Sendable {
 public struct Config: Codable, Equatable, Sendable {
     public static let historyLimit = 100
 
+    /// Profile order within each browser; across browsers, `browserOrder` decides (see `orderedTargets`).
     public var targets: [Target]
+    /// The pinned targets: in the picker strip. Every other available target is under ⋯.
     public var visible: [Target.ID]
+    /// Every browser exactly once; the order of the picker's groups and Settings' sections.
+    public var browserOrder: [Browser]
     public var rules: [Rule]
     public var rememberedDocuments: [String: Target.ID]
     public var lastChoiceByHost: [String: Target.ID]
     public var history: [HistoryEntry]
 
-    public init(targets: [Target], visible: [Target.ID], rules: [Rule] = [],
+    /// A `browserOrder` that is missing browsers is completed by `completedBrowserOrder`.
+    public init(targets: [Target], visible: [Target.ID], browserOrder: [Browser] = [], rules: [Rule] = [],
                 rememberedDocuments: [String: Target.ID] = [:],
                 lastChoiceByHost: [String: Target.ID] = [:], history: [HistoryEntry] = []) {
         self.targets = targets
         self.visible = visible
+        self.browserOrder = Self.completedBrowserOrder(browserOrder, targets: targets)
         self.rules = rules
         self.rememberedDocuments = rememberedDocuments
         self.lastChoiceByHost = lastChoiceByHost
@@ -37,20 +43,48 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     /// Tolerates a config from another version: a missing key takes its default (`visible`
-    /// defaults to every target), an unknown key is ignored.
+    /// defaults to every target), an unknown key or browser is ignored.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let targets = try c.decodeIfPresent([Target].self, forKey: .targets) ?? []
+        let order = try c.decodeIfPresent([String].self, forKey: .browserOrder) ?? []
         self.init(targets: targets,
                   visible: try c.decodeIfPresent([Target.ID].self, forKey: .visible) ?? targets.map(\.id),
+                  browserOrder: order.compactMap(Browser.init(rawValue:)),
                   rules: try c.decodeIfPresent([Rule].self, forKey: .rules) ?? [],
                   rememberedDocuments: try c.decodeIfPresent([String: Target.ID].self, forKey: .rememberedDocuments) ?? [:],
                   lastChoiceByHost: try c.decodeIfPresent([String: Target.ID].self, forKey: .lastChoiceByHost) ?? [:],
                   history: try c.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? [])
     }
 
+    /// `order` without repeats, then each browser in the order it first appears in `targets`,
+    /// then the rest of `Browser.allCases`.
+    public static func completedBrowserOrder(_ order: [Browser], targets: [Target]) -> [Browser] {
+        var result: [Browser] = []
+        for browser in order + targets.map(\.browser) + Browser.allCases where !result.contains(browser) {
+            result.append(browser)
+        }
+        return result
+    }
+
+    /// The effective target order: browsers in `browserOrder`, each browser's profiles in `targets` order.
+    public var orderedTargets: [Target] {
+        browserOrder.flatMap(targets(of:))
+    }
+
+    public func targets(of browser: Browser) -> [Target] {
+        targets.filter { $0.browser == browser }
+    }
+
+    /// Settings' sections: browsers with targets, plus `including` (installed or unreadable ones),
+    /// in browser order.
+    public func browserSections(including: Set<Browser>) -> [Browser] {
+        let present = including.union(targets.map(\.browser))
+        return browserOrder.filter(present.contains)
+    }
+
     public func routerState(available: Set<Target.ID>) -> RouterState {
-        RouterState(targets: targets, visible: visible, rules: rules,
+        RouterState(targets: orderedTargets, visible: visible, rules: rules,
                     rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
                     available: available)
     }
@@ -94,22 +128,38 @@ extension Config {
         }
     }
 
-    /// Shows or hides a target in the picker. `visible` follows `targets` order, so the picker's
-    /// order is the order the user arranges targets in.
+    /// Pins or unpins a target. `visible` is kept in `orderedTargets` order.
     public mutating func setVisible(_ id: Target.ID, _ isVisible: Bool) {
         var shown = Set(visible)
         if isVisible { shown.insert(id) } else { shown.remove(id) }
-        visible = targets.map(\.id).filter(shown.contains)
+        visible = orderedTargets.map(\.id).filter(shown.contains)
     }
 
-    /// Reorders targets (List.onMove's arguments); `visible` follows.
-    public mutating func moveTargets(fromOffsets source: IndexSet, toOffset destination: Int) {
-        let moving = source.map { targets[$0] }
-        var rest = targets.enumerated().filter { !source.contains($0.offset) }.map(\.element)
-        rest.insert(contentsOf: moving, at: destination - source.filter { $0 < destination }.count)
-        targets = rest
+    /// Puts `browser` where `destination` is, shifting the browsers between them one place.
+    public mutating func moveBrowser(_ browser: Browser, to destination: Browser) {
+        guard let from = browserOrder.firstIndex(of: browser),
+              let to = browserOrder.firstIndex(of: destination), from != to else { return }
+        browserOrder.remove(at: from)
+        browserOrder.insert(browser, at: to)
+        sortVisible()
+    }
+
+    /// Reorders one browser's profiles (List.onMove's arguments, as offsets into `targets(of:)`);
+    /// other browsers' targets keep their places. Offsets outside the browser are ignored.
+    public mutating func moveProfiles(of browser: Browser, fromOffsets source: IndexSet, toOffset destination: Int) {
+        let slots = targets.indices.filter { targets[$0].browser == browser }
+        guard source.allSatisfy(slots.indices.contains), (0...slots.count).contains(destination) else { return }
+        var profiles = slots.map { targets[$0] }
+        let moving = source.map { profiles[$0] }
+        profiles = profiles.enumerated().filter { !source.contains($0.offset) }.map(\.element)
+        profiles.insert(contentsOf: moving, at: destination - source.filter { $0 < destination }.count)
+        for (slot, profile) in zip(slots, profiles) { targets[slot] = profile }
+        sortVisible()
+    }
+
+    private mutating func sortVisible() {
         let shown = Set(visible)
-        visible = targets.map(\.id).filter(shown.contains)
+        visible = orderedTargets.map(\.id).filter(shown.contains)
     }
 
     /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule.

@@ -61,34 +61,86 @@ struct TargetsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Targets marked “In picker” appear in the picker in this order. Drag a row to reorder.")
+            Text("Pinned profiles appear in the picker in this order; the rest are under ⋯. Drag to reorder.")
                 .foregroundStyle(.secondary)
             List {
-                ForEach($model.config.targets) { $target in
-                    HStack(spacing: 10) {
-                        Toggle("In picker", isOn: Binding(
-                            get: { model.config.visible.contains(target.id) },
-                            set: { model.config.setVisible(target.id, $0) }))
-                            .toggleStyle(.checkbox)
-                        Image(nsImage: ProfileIcon.image(for: target))
-                            .resizable().frame(width: 24, height: 24)
-                        VStack(alignment: .leading, spacing: 2) {
-                            TextField("Name", text: $target.name)
-                            Text(Self.detail(target, found: model.available.contains(target.id)))
-                                .font(.caption).foregroundStyle(.secondary)
-                                .textSelection(.enabled)
+                let sections = model.browserSections
+                ForEach(Array(sections.enumerated()), id: \.element) { index, browser in
+                    Section {
+                        if let root = model.unreadable.first(where: { $0.browser == browser }) {
+                            BrowserAccessRow(root: root, model: model)
+                        } else if model.config.targets(of: browser).isEmpty {
+                            Text("No \(browser.displayName) profiles found").foregroundStyle(.secondary)
                         }
+                        ForEach(model.config.targets(of: browser)) { target in
+                            row(target)
+                        }
+                        .onMove { model.config.moveProfiles(of: browser, fromOffsets: $0, toOffset: $1) }
+                    } header: {
+                        header(browser, before: sections[safe: index - 1], after: sections[safe: index + 1])
                     }
-                    .padding(.vertical, 2)
                 }
-                .onMove { model.config.moveTargets(fromOffsets: $0, toOffset: $1) }
             }
             .overlay {
-                if model.config.targets.isEmpty {
+                if model.browserSections.isEmpty {
                     EmptyNote(text: "No browser profiles found. Grant access to your browsers under General.")
                 }
             }
         }
+    }
+
+    /// The section's browser, dragged onto another header to take its place; the arrows do the same a step at a time.
+    private func header(_ browser: Browser, before: Browser?, after: Browser?) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "line.3.horizontal").foregroundStyle(.secondary)
+            Text(browser.displayName)
+            Spacer()
+            Button { if let before { model.config.moveBrowser(browser, to: before) } } label: {
+                Label("Move \(browser.displayName) Up", systemImage: "chevron.up")
+            }
+            .disabled(before == nil)
+            Button { if let after { model.config.moveBrowser(browser, to: after) } } label: {
+                Label("Move \(browser.displayName) Down", systemImage: "chevron.down")
+            }
+            .disabled(after == nil)
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .contentShape(Rectangle())
+        .help("Drag to reorder browsers")
+        .draggable(browser.rawValue)
+        .dropDestination(for: String.self) { items, _ in
+            guard let moved = items.first.flatMap(Browser.init(rawValue:)) else { return false }
+            model.config.moveBrowser(moved, to: browser)
+            return true
+        }
+    }
+
+    private func row(_ target: Target) -> some View {
+        HStack(spacing: 10) {
+            Toggle("Pinned", isOn: Binding(
+                get: { model.config.visible.contains(target.id) },
+                set: { model.config.setVisible(target.id, $0) }))
+                .toggleStyle(.checkbox)
+            Image(nsImage: ProfileIcon.image(for: target))
+                .resizable().frame(width: 24, height: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("Name", text: name(target.id))
+                Text(Self.detail(target, found: model.available.contains(target.id)))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func name(_ id: Target.ID) -> Binding<String> {
+        Binding(
+            get: { model.target(id)?.name ?? "" },
+            set: { name in
+                guard let index = model.config.targets.firstIndex(where: { $0.id == id }) else { return }
+                model.config.targets[index].name = name
+            })
     }
 
     static func detail(_ target: Target, found: Bool) -> String {
@@ -319,13 +371,7 @@ struct GeneralTab: View {
                 if model.unreadable.isEmpty {
                     Text("Manicule can read all your browsers' profiles.")
                 } else {
-                    ForEach(model.unreadable, id: \.browser) { root in
-                        HStack {
-                            Text("\(root.browser.displayName) can't be read yet")
-                            Spacer()
-                            Button("Grant Access…") { BrowserAccess.grant(root, model: model) }
-                        }
-                    }
+                    ForEach(model.unreadable, id: \.browser) { BrowserAccessRow(root: $0, model: model) }
                 }
             }
         }
@@ -335,6 +381,26 @@ struct GeneralTab: View {
         }
         .onAppear { current = DefaultBrowser.current }
     }
+}
+
+/// A browser whose profiles can't be read yet, with the grant beside it (General and Targets).
+struct BrowserAccessRow: View {
+    let root: BrowserRoot
+    let model: AppModel
+
+    static func label(_ browser: Browser) -> String { "Can't read \(browser.displayName)'s profiles yet" }
+
+    var body: some View {
+        HStack {
+            Text(Self.label(root.browser))
+            Spacer()
+            Button("Grant Access…") { BrowserAccess.grant(root, model: model) }
+        }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }
 
 /// macOS lets Manicule read a browser's profile file only after the user picks that exact folder

@@ -21,10 +21,122 @@ final class PickerPanelTests: XCTestCase {
                          characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode)!
     }
 
-    private func show(_ picker: PickerPanel, preselected: Target.ID? = nil) -> () -> [PickerAction] {
+    private let unpinned = [
+        Target(id: "extra", browser: .chrome, profile: "Profile 2", name: "Chrome · Extra", email: "x@example.com"),
+        Target(id: "firefox", browser: .firefox, profile: nil, name: "Firefox", email: nil),
+    ]
+
+    private func show(_ picker: PickerPanel, preselected: Target.ID? = nil, more: [[Target]] = []) -> () -> [PickerAction] {
         var actions: [PickerAction] = []
-        picker.show(link, targets: targets, preselected: preselected) { actions.append($0) }
+        picker.show(link, strip: Target.groupedByBrowser(targets), more: more, preselected: preselected) {
+            actions.append($0)
+        }
         return { actions }
+    }
+
+    /// Replaces the menu's pop-up (which tracks the mouse modally) with a recorder.
+    private func recordMenus(_ picker: PickerPanel) -> () -> [(menu: NSMenu, highlighted: NSMenuItem?)] {
+        var shown: [(menu: NSMenu, highlighted: NSMenuItem?)] = []
+        picker.presentMenu = { menu, highlighted, _ in shown.append((menu, highlighted)) }
+        return { shown }
+    }
+
+    func testStripLeavesAGapBetweenBrowserGroupsAndEndsInMore() throws {
+        let picker = PickerPanel()
+        _ = show(picker, more: [unpinned])
+        let content = try XCTUnwrap(picker.panel.contentView)
+        content.layoutSubtreeIfNeeded()
+        let frames = (picker.tiles + [picker.moreTile]).map { $0.convert($0.bounds, to: content) }
+        for (left, right) in zip(frames, frames.dropFirst()) {
+            XCTAssertEqual(right.minX - left.maxX, PickerPanel.groupGap, accuracy: 0.5, "every neighbour here is another browser")
+        }
+        XCTAssertTrue(picker.moreTile.isEnabled)
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
+    func testMoreIsDisabledWithAReasonWhenEveryProfileIsPinned() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        let actions = show(picker)
+        XCTAssertFalse(picker.moreTile.isEnabled)
+        XCTAssertEqual(picker.moreTile.toolTip, "Every profile is pinned")
+        picker.panel.firstResponder?.keyDown(with: key("0", 29))
+        picker.moreTile.mouseDown(with: try mouse())
+        XCTAssertTrue(menus().isEmpty)
+        XCTAssertEqual(actions(), [])
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
+    func testZeroOpensTheMenuGroupedByBrowser() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        let actions = show(picker, more: Target.groupedByBrowser(unpinned))
+        picker.panel.firstResponder?.keyDown(with: key("0", 29))
+        let menu = try XCTUnwrap(menus().first?.menu)
+        XCTAssertEqual(menu.items.map(\.title), [
+            "Chrome", "Extra — x@example.com", "Extra — x@example.com — always for example.com",
+            "Firefox", "Firefox", "Firefox — always for example.com",
+        ])
+        XCTAssertTrue(menu.items[0].isSectionHeader)
+        XCTAssertTrue(menu.items[2].isAlternate)
+        XCTAssertEqual(menu.items[2].keyEquivalentModifierMask, .option)
+        XCTAssertEqual(actions(), [], "the picker waits for the menu")
+        menu.performActionForItem(at: 1)
+        XCTAssertEqual(actions(), [.open("extra", always: false)])
+        XCTAssertFalse(picker.panel.isVisible)
+    }
+
+    func testOptionChoosingFromTheMenuOpensAlways() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        let actions = show(picker, more: Target.groupedByBrowser(unpinned))
+        picker.moreTile.mouseDown(with: try mouse())
+        try XCTUnwrap(menus().first?.menu).performActionForItem(at: 5)
+        XCTAssertEqual(actions(), [.open("firefox", always: true)])
+    }
+
+    func testDismissingTheMenuReturnsToTheStrip() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        let actions = show(picker, more: [unpinned])
+        let responder = try XCTUnwrap(picker.panel.firstResponder)
+        responder.keyDown(with: key("0", 29))
+        XCTAssertEqual(menus().count, 1)
+        XCTAssertEqual(actions(), [])
+        XCTAssertTrue(picker.panel.isVisible)
+        XCTAssertTrue(picker.panel.firstResponder === responder)
+        responder.keyDown(with: key("1", 18))
+        XCTAssertEqual(actions(), [.open("first", always: false)])
+    }
+
+    func testArrowOntoMoreThenReturnOpensTheMenu() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        _ = show(picker, preselected: "safari", more: [unpinned])
+        let responder = try XCTUnwrap(picker.panel.firstResponder)
+        responder.keyDown(with: key(String(UnicodeScalar(NSRightArrowFunctionKey)!), 124))
+        XCTAssertTrue(picker.moreTile.isSelected)
+        XCTAssertFalse(picker.tiles.contains(where: \.isSelected))
+        responder.keyDown(with: key("\r", 36))
+        XCTAssertEqual(menus().count, 1)
+        responder.keyDown(with: key("\u{1B}", 53))
+    }
+
+    func testUnpinnedPreselectionHighlightsMoreAndItsItem() throws {
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        _ = show(picker, preselected: "firefox", more: Target.groupedByBrowser(unpinned))
+        XCTAssertTrue(picker.moreTile.isSelected)
+        picker.panel.firstResponder?.keyDown(with: key("\r", 36))
+        let shown = try XCTUnwrap(menus().first)
+        XCTAssertEqual(shown.highlighted?.title, "Firefox")
+        XCTAssertFalse(shown.highlighted?.isAlternate ?? true)
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
+    private func mouse() throws -> NSEvent {
+        try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseDown, location: .zero, modifierFlags: [], timestamp: 0,
+                                         windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 0))
     }
 
     func testKeyTwoOpensSecondTarget() throws {
@@ -110,7 +222,7 @@ final class PickerPanelTests: XCTestCase {
             Target(id: "y", browser: .chrome, profile: "Profile 1", name: "Chrome · Work", email: nil),
             Target(id: "safari", browser: .safari, profile: nil, name: "Safari", email: nil),
         ]
-        picker.show(link, targets: twins, preselected: nil) { _ in }
+        picker.show(link, strip: Target.groupedByBrowser(twins), more: [], preselected: nil) { _ in }
         XCTAssertEqual(picker.tiles.map(\.detail), ["one@example.com", "Profile 1", nil])
         let labels = picker.tiles[0].subviews.compactMap { ($0 as? NSTextField)?.stringValue }
         XCTAssertTrue(labels.contains("one@example.com"), "\(labels)")

@@ -6,6 +6,8 @@ import ManiculeCore
 @MainActor
 final class PickerPanel: NSObject, @MainActor Picking {
     static let tile: CGFloat = 76
+    /// The extra space between browser groups, and before ⋯.
+    static let groupGap: CGFloat = 12
     private static let padding: CGFloat = 10
     private static let headerHeight: CGFloat = 24
 
@@ -18,7 +20,14 @@ final class PickerPanel: NSObject, @MainActor Picking {
 
     private var model: PickerModel?
     private(set) var tiles: [TileView] = []
+    let moreTile = MoreTileView()
+    private var shownStrip: [[Target]]?
     private var completion: ((PickerAction) -> Void)?
+    private var menuIsOpen = false
+    /// Pops the ⋯ menu up under `tile`, with `highlighted` placed there; returns once it closes.
+    var presentMenu: @MainActor (NSMenu, NSMenuItem?, NSView) -> Void = { menu, highlighted, tile in
+        menu.popUp(positioning: highlighted, at: NSPoint(x: 0, y: -4), in: tile)
+    }
     private var clickMonitor: Any?
     private var sourceNames: [String: String] = [:]
 
@@ -69,6 +78,8 @@ final class PickerPanel: NSObject, @MainActor Picking {
         header.distribution = .fill
         strip.orientation = .horizontal
         strip.spacing = 0
+        strip.addArrangedSubview(moreTile)
+        moreTile.onClick = { [weak self] in self?.handle(.more) }
         let column = NSStackView(views: [header, strip])
         column.orientation = .vertical
         column.alignment = .leading
@@ -91,18 +102,21 @@ final class PickerPanel: NSObject, @MainActor Picking {
         ])
     }
 
-    func show(_ link: IncomingLink, targets: [Target], preselected: Target.ID?,
+    func show(_ link: IncomingLink, strip groups: [[Target]], more: [[Target]], preselected: Target.ID?,
               completion: @escaping (PickerAction) -> Void) {
         self.completion = completion
-        model = PickerModel(link: link, targets: targets, preselected: preselected)
+        let model = PickerModel(link: link, strip: groups, more: more, preselected: preselected)
+        self.model = model
         urlLabel.stringValue = (link.url.host() ?? "") + link.url.path()
         urlLabel.toolTip = link.url.absoluteString
         sourceLabel.stringValue = link.sourceApp.flatMap(sourceName) ?? ""
         sourceLabel.isHidden = sourceLabel.stringValue.isEmpty
-        fillStrip(targets)
+        fillStrip(groups)
+        moreTile.isEnabled = model.moreIsEnabled
         refreshSelection()
 
-        let width = max(CGFloat(max(targets.count, 3)) * Self.tile, 280) + Self.padding * 2
+        let tiles = CGFloat(model.pinned.count + 1) * Self.tile + CGFloat(groups.count) * Self.groupGap
+        let width = max(tiles, 280) + Self.padding * 2
         let height = Self.headerHeight + 6 + Self.tile + Self.padding * 2
         panel.setFrame(Self.frame(size: NSSize(width: width, height: height), under: NSEvent.mouseLocation),
                        display: false)
@@ -125,28 +139,86 @@ final class PickerPanel: NSObject, @MainActor Picking {
         return frame
     }
 
-    private func fillStrip(_ targets: [Target]) {
-        if tiles.map(\.target) == targets { return }
+    /// One tile per pinned target, numbered straight across the groups, with `groupGap` after
+    /// each group (so also before ⋯, which stays the last arranged view).
+    private func fillStrip(_ groups: [[Target]]) {
+        if shownStrip == groups { return }
+        shownStrip = groups
         tiles.forEach { $0.removeFromSuperview() }
+        let targets = groups.flatMap { $0 }
         let details = Target.tileDetails(targets)
         tiles = targets.enumerated().map { index, target in
             let tile = TileView(target: target, number: index < 9 ? index + 1 : nil, detail: details[target.id])
             tile.onClick = { [weak self] in self?.finish(.open(target.id, always: false)) }
-            strip.addArrangedSubview(tile)
+            strip.insertArrangedSubview(tile, at: index)
             return tile
+        }
+        var end = 0
+        for group in groups {
+            end += group.count
+            if end > 0 { strip.setCustomSpacing(Self.groupGap, after: tiles[end - 1]) }
         }
     }
 
     private func refreshSelection() {
-        for tile in tiles { tile.isSelected = tile.target.id == model?.selection }
+        for tile in tiles { tile.isSelected = model?.selection == .target(tile.target.id) }
+        moreTile.isSelected = model?.selection == .more
     }
 
     private func handle(_ key: PickerKey) {
         guard model != nil else { return }
-        if let action = model!.handle(key) { finish(action) } else { refreshSelection() }
+        switch model!.handle(key) {
+        case .finish(let action): finish(action)
+        case .showMore(let highlighted): showMore(highlighted: highlighted)
+        case nil: refreshSelection()
+        }
     }
 
     @objc private func copyClicked() { handle(.copy) }
+
+    /// The ⋯ menu: a heading per browser, then each target; holding ⌥ swaps each item for its
+    /// "always for this host" twin. Closing it without a choice leaves the picker up.
+    private func showMore(highlighted: Target.ID?) {
+        guard let model else { return }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let host = model.link.url.host()?.lowercased() ?? ""
+        var highlightedItem: NSMenuItem?
+        for group in model.more {
+            guard let browser = group.first?.browser else { continue }
+            menu.addItem(.sectionHeader(title: browser.displayName))
+            for target in group {
+                let title = [target.shortName, target.email].compactMap { $0 }.joined(separator: " — ")
+                let item = moreItem(title, target.id, always: false)
+                menu.addItem(item)
+                if target.id == highlighted { highlightedItem = item }
+                guard !host.isEmpty else { continue }
+                let always = moreItem("\(title) — always for \(host)", target.id, always: true)
+                always.isAlternate = true
+                always.keyEquivalentModifierMask = .option
+                menu.addItem(always)
+            }
+        }
+        menuIsOpen = true
+        presentMenu(menu, highlightedItem, moreTile)
+        menuIsOpen = false
+        guard completion != nil else { return }
+        // Escape or a click away closed the menu: back to the strip, keys and all.
+        panel.makeKeyAndOrderFront(nil)
+        panel.makeFirstResponder(content)
+    }
+
+    private func moreItem(_ title: String, _ id: Target.ID, always: Bool) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: #selector(moreItemChosen(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = MoreChoice(id: id, always: always)
+        return item
+    }
+
+    @objc private func moreItemChosen(_ item: NSMenuItem) {
+        guard let choice = item.representedObject as? MoreChoice else { return }
+        finish(.open(choice.id, always: choice.always))
+    }
 
     /// Hides the panel and completes exactly once.
     private func finish(_ action: PickerAction) {
@@ -157,6 +229,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         clickMonitor = nil
         // A window being ordered out doesn't reliably get mouseExited, and tiles are reused.
         tiles.forEach { $0.clearHover() }
+        moreTile.clearHover()
         copyButton.clearHover()
         panel.orderOut(nil)
         completion(action)
@@ -174,10 +247,18 @@ final class PickerPanel: NSObject, @MainActor Picking {
 
 extension PickerPanel: NSWindowDelegate {
     /// Losing key without a click (⌘-Tab, Mission Control) would leave the panel deaf to keys
-    /// and the link queue stalled, so it cancels like a click outside.
+    /// and the link queue stalled, so it cancels like a click outside. The ⋯ menu is the
+    /// exception: the picker takes key back when it closes.
     func windowDidResignKey(_ notification: Notification) {
+        guard !menuIsOpen else { return }
         finish(.cancel)
     }
+}
+
+/// A ⋯ menu item's target and whether it also saves "always for this host".
+private struct MoreChoice {
+    let id: Target.ID
+    let always: Bool
 }
 
 /// A borderless panel can't become key on its own; the picker needs key events.
@@ -212,18 +293,24 @@ final class PickerContentView: NSView {
         }
         guard let chars = event.charactersIgnoringModifiers?.lowercased() else { return nil }
         if chars == "c" { return .copy }
+        if chars == "0" { return .more }
         if let digit = Int(chars), (1...9).contains(digit) { return .digit(digit) }
         return nil
     }
 }
 
-/// One target in the strip: its picture, number and short name, plus a detail line (account or
-/// folder) when another tile shares the short name; the tooltip adds the full name and email.
-final class TileView: NSView {
-    let target: Target
-    let detail: String?
+/// A square tile in the strip: a picture, a name, an optional detail line under it and an
+/// optional key badge. Draws the keyboard selection and the hover; a disabled tile is dimmed and
+/// takes neither hover nor clicks.
+class StripTileView: NSView {
     var onClick: (() -> Void)?
     var isSelected = false { didSet { needsDisplay = true } }
+    var isEnabled = true {
+        didSet {
+            alphaValue = isEnabled ? 1 : 0.4
+            if !isEnabled { isHovered = false }
+        }
+    }
     private(set) var isHovered = false { didSet { needsDisplay = true } }
 
     override func updateTrackingAreas() {
@@ -234,25 +321,22 @@ final class TileView: NSView {
                                        owner: self))
     }
 
-    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseEntered(with event: NSEvent) { if isEnabled { isHovered = true } }
     override func mouseExited(with event: NSEvent) { isHovered = false }
     func clearHover() { isHovered = false }
 
     @MainActor
-    init(target: Target, number: Int?, detail: String? = nil) {
-        self.target = target
-        self.detail = detail
+    init(image: NSImage, name: String, number: String?, detail: String?) {
         super.init(frame: NSRect(x: 0, y: 0, width: PickerPanel.tile, height: PickerPanel.tile))
-        toolTip = [target.name, target.email].compactMap { $0 }.joined(separator: "\n")
         translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             widthAnchor.constraint(equalToConstant: PickerPanel.tile),
             heightAnchor.constraint(equalToConstant: PickerPanel.tile),
         ])
 
-        let image = NSImageView(image: ProfileIcon.image(for: target))
+        let image = NSImageView(image: image)
         image.imageScaling = .scaleProportionallyUpOrDown
-        let name = NSTextField(labelWithString: target.shortName)
+        let name = NSTextField(labelWithString: name)
         name.font = .systemFont(ofSize: 10)
         name.alignment = .center
         name.lineBreakMode = .byTruncatingTail
@@ -286,7 +370,7 @@ final class TileView: NSView {
         }
 
         if let number {
-            let badge = NSTextField(labelWithString: "\(number)")
+            let badge = NSTextField(labelWithString: number)
             badge.font = .monospacedDigitSystemFont(ofSize: 10, weight: .semibold)
             badge.textColor = .secondaryLabelColor
             badge.translatesAutoresizingMaskIntoConstraints = false
@@ -313,8 +397,43 @@ final class TileView: NSView {
         }
     }
 
-    override func mouseDown(with event: NSEvent) { onClick?() }
+    override func mouseDown(with event: NSEvent) { if isEnabled { onClick?() } }
 }
+
+/// One target in the strip: its picture, number and short name, plus a detail line (account or
+/// folder) when another tile shares the short name; the tooltip adds the full name and email.
+final class TileView: StripTileView {
+    let target: Target
+    let detail: String?
+
+    @MainActor
+    init(target: Target, number: Int?, detail: String? = nil) {
+        self.target = target
+        self.detail = detail
+        super.init(image: ProfileIcon.image(for: target), name: target.shortName, number: number.map(String.init),
+                   detail: detail)
+        toolTip = [target.name, target.email].compactMap { $0 }.joined(separator: "\n")
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+}
+
+/// The strip's last tile: the menu of available targets that aren't pinned (key `0`).
+final class MoreTileView: StripTileView {
+    @MainActor
+    init() {
+        let image = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: "More") ?? NSImage()
+        super.init(image: image, name: "More", number: "0", detail: nil)
+        toolTip = "More profiles (0)"
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override var isEnabled: Bool {
+        didSet { toolTip = isEnabled ? "More profiles (0)" : "Every profile is pinned" }
+    }
+}
+
 
 /// A borderless text button with a rounded background that brightens under the pointer.
 final class HoverButton: NSButton {

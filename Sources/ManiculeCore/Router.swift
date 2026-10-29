@@ -44,9 +44,19 @@ public struct RouterState: Sendable {
         return targets.first { $0.id == id }
     }
 
-    /// The picker strip: visible targets that are available, in the user's order.
+    /// The picker strip: pinned targets that are available, in `targets` order.
     public var pickerTargets: [Target] {
-        visible.compactMap(target)
+        let pinned = Set(visible)
+        return targets.filter { pinned.contains($0.id) && available.contains($0.id) }
+    }
+
+    /// The strip, one group per browser.
+    public var pickerGroups: [[Target]] { Target.groupedByBrowser(pickerTargets) }
+
+    /// The ⋯ menu: available targets that aren't pinned, one group per browser.
+    public var overflowGroups: [[Target]] {
+        let pinned = Set(visible)
+        return Target.groupedByBrowser(targets.filter { !pinned.contains($0.id) && available.contains($0.id) })
     }
 }
 
@@ -78,12 +88,11 @@ public enum Router {
             return .open(t, .rememberedDocument)
         }
 
-        let visible = state.pickerTargets.map(\.id)
         let host = link.url.host?.lowercased().nilIfEmpty
-        if let host, let last = state.lastChoiceByHost[host], visible.contains(last) {
-            return .pick(preselected: last)
+        if let host, let last = state.target(state.lastChoiceByHost[host]) {
+            return .pick(preselected: last.id)
         }
-        return .pick(preselected: visible.first)
+        return .pick(preselected: state.pickerTargets.first?.id)
     }
 }
 

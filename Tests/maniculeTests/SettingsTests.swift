@@ -112,6 +112,29 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(try savedConfig().targets.map(\.id), ["safari|", "chrome|Default"])
     }
 
+    /// An unreadable browser is a Targets section of its own, with the grant in place.
+    func testTargetsAreSectionedByBrowserIncludingUnreadableOnes() throws {
+        let chrome = home.appendingPathComponent("Library/Application Support/Google/Chrome", isDirectory: true)
+        try FileManager.default.createDirectory(at: chrome, withIntermediateDirectories: true)
+        let file = chrome.appendingPathComponent("Local State")
+        try localState.write(to: file, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: file.path)
+        lockedFiles.append(file)
+
+        let model = try seededModel()
+        XCTAssertTrue(model.browserSections.contains(.chrome))
+        XCTAssertTrue(model.browserSections.contains(.safari))
+        XCTAssertEqual(BrowserAccessRow.label(.chrome), "Can't read Chrome's profiles yet")
+        let order = model.config.browserOrder
+        XCTAssertEqual(model.browserSections, order.filter(model.browserSections.contains), "in browser order")
+    }
+
+    func testBrowserOrderIsSaved() throws {
+        let model = try seededModel()
+        model.config.moveBrowser(.safari, to: model.config.browserOrder[0])
+        XCTAssertEqual(try savedConfig().browserOrder.first, .safari)
+    }
+
     func testGrantPanelOpensAtTheBrowserFolder() {
         let folder = home.appendingPathComponent("Library/Application Support/Firefox", isDirectory: true)
         let panel = BrowserAccess.panel(for: BrowserRoot(browser: .firefox, folder: folder,

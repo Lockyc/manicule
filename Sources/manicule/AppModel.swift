@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import ManiculeCore
 import Observation
 import os
@@ -29,6 +29,8 @@ final class AppModel {
     private(set) var discovered: [DiscoveredProfile] = []
     /// Installed browsers whose profile file macOS won't let Manicule read yet.
     private(set) var unreadable: [BrowserRoot] = []
+    /// Browsers with an app on this Mac.
+    private(set) var installed: Set<Browser> = []
     /// Why changes can't be saved (the config file couldn't be taken in safely); nil when they can.
     private(set) var saveRefusal: String?
 
@@ -45,6 +47,7 @@ final class AppModel {
     func reload() {
         discovered = ProfileDiscovery.discoverAll(home: home)
         unreadable = ProfileDiscovery.unreadableRoots(home: home)
+        installed = Set(Browser.allCases.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) != nil })
         var loaded = store.load(discovered: discovered)
         saveRefusal = store.saveRefusal
         loaded.merge(discovered: discovered)
@@ -64,6 +67,11 @@ final class AppModel {
     }
 
     var routerState: RouterState { config.routerState(available: available) }
+
+    /// Settings → Targets' sections: browsers installed, unreadable or with targets, in browser order.
+    var browserSections: [Browser] {
+        config.browserSections(including: installed.union(unreadable.map(\.browser)))
+    }
 
     static let veljaPreferences = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Containers/com.sindresorhus.Velja/Data/Library/Preferences/com.sindresorhus.Velja.plist")
