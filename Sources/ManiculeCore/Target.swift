@@ -37,6 +37,17 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         self.email = email
     }
 
+    /// The line under a picker tile's name, for tiles whose short name another tile shares: the
+    /// account email, else the profile folder.
+    public static func tileDetails(_ strip: [Target]) -> [Target.ID: String] {
+        let counts = Dictionary(grouping: strip, by: \.shortName).mapValues(\.count)
+        var details: [Target.ID: String] = [:]
+        for target in strip where counts[target.shortName, default: 0] > 1 {
+            details[target.id] = target.email ?? target.profile ?? target.browser.displayName
+        }
+        return details
+    }
+
     /// `id` and `browser` are required; a missing name is the browser's.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)

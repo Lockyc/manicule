@@ -128,8 +128,9 @@ final class PickerPanel: NSObject, @MainActor Picking {
     private func fillStrip(_ targets: [Target]) {
         if tiles.map(\.target) == targets { return }
         tiles.forEach { $0.removeFromSuperview() }
+        let details = Target.tileDetails(targets)
         tiles = targets.enumerated().map { index, target in
-            let tile = TileView(target: target, number: index < 9 ? index + 1 : nil)
+            let tile = TileView(target: target, number: index < 9 ? index + 1 : nil, detail: details[target.id])
             tile.onClick = { [weak self] in self?.finish(.open(target.id, always: false)) }
             strip.addArrangedSubview(tile)
             return tile
@@ -216,9 +217,11 @@ final class PickerContentView: NSView {
     }
 }
 
-/// One target in the strip: its picture, number and short name; the tooltip adds the full name and email.
+/// One target in the strip: its picture, number and short name, plus a detail line (account or
+/// folder) when another tile shares the short name; the tooltip adds the full name and email.
 final class TileView: NSView {
     let target: Target
+    let detail: String?
     var onClick: (() -> Void)?
     var isSelected = false { didSet { needsDisplay = true } }
     private(set) var isHovered = false { didSet { needsDisplay = true } }
@@ -236,8 +239,9 @@ final class TileView: NSView {
     func clearHover() { isHovered = false }
 
     @MainActor
-    init(target: Target, number: Int?) {
+    init(target: Target, number: Int?, detail: String? = nil) {
         self.target = target
+        self.detail = detail
         super.init(frame: NSRect(x: 0, y: 0, width: PickerPanel.tile, height: PickerPanel.tile))
         toolTip = [target.name, target.email].compactMap { $0 }.joined(separator: "\n")
         translatesAutoresizingMaskIntoConstraints = false
@@ -256,15 +260,30 @@ final class TileView: NSView {
             view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(view)
         }
+        let side: CGFloat = detail == nil ? 44 : 34  // room for the detail line within the tile
         NSLayoutConstraint.activate([
             image.centerXAnchor.constraint(equalTo: centerXAnchor),
             image.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            image.widthAnchor.constraint(equalToConstant: 44),
-            image.heightAnchor.constraint(equalToConstant: 44),
+            image.widthAnchor.constraint(equalToConstant: side),
+            image.heightAnchor.constraint(equalToConstant: side),
             name.topAnchor.constraint(equalTo: image.bottomAnchor, constant: 4),
             name.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
             name.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
         ])
+        if let detail {
+            let line = NSTextField(labelWithString: detail)
+            line.font = .systemFont(ofSize: 9)
+            line.textColor = .secondaryLabelColor
+            line.alignment = .center
+            line.lineBreakMode = .byTruncatingMiddle
+            line.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(line)
+            NSLayoutConstraint.activate([
+                line.topAnchor.constraint(equalTo: name.bottomAnchor),
+                line.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
+                line.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            ])
+        }
 
         if let number {
             let badge = NSTextField(labelWithString: "\(number)")

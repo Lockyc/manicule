@@ -103,6 +103,20 @@ final class PickerPanelTests: XCTestCase {
         picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
     }
 
+    func testTilesSharingAShortNameShowTheirAccountOnTheTile() throws {
+        let picker = PickerPanel()
+        let twins = [
+            Target(id: "x", browser: .chrome, profile: "Default", name: "Chrome · Work", email: "one@example.com"),
+            Target(id: "y", browser: .chrome, profile: "Profile 1", name: "Chrome · Work", email: nil),
+            Target(id: "safari", browser: .safari, profile: nil, name: "Safari", email: nil),
+        ]
+        picker.show(link, targets: twins, preselected: nil) { _ in }
+        XCTAssertEqual(picker.tiles.map(\.detail), ["one@example.com", "Profile 1", nil])
+        let labels = picker.tiles[0].subviews.compactMap { ($0 as? NSTextField)?.stringValue }
+        XCTAssertTrue(labels.contains("one@example.com"), "\(labels)")
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
     func testResigningKeyCancels() {
         let picker = PickerPanel()
         let actions = show(picker)

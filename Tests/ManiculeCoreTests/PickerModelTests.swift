@@ -14,6 +14,19 @@ final class PickerModelTests: XCTestCase {
         PickerModel(link: link, targets: targets, preselected: preselected)
     }
 
+    /// Two Chrome profiles signed into one domain are often both named after it; the tile then
+    /// shows what tells them apart.
+    func testTilesSharingAShortNameShowTheirAccountOrFolder() {
+        let strip = [
+            Target(id: "a", browser: .chrome, profile: "Default", name: "Chrome · example.com", email: "a@example.com"),
+            Target(id: "b", browser: .chrome, profile: "Profile 1", name: "Chrome · example.com", email: nil),
+            Target(id: "c", browser: .chromium, profile: "Default", name: "Chromium · Home", email: nil),
+            Target(id: "d", browser: .safari, profile: nil, name: "Safari", email: nil),
+        ]
+        XCTAssertEqual(Target.tileDetails(strip), ["a": "a@example.com", "b": "Profile 1"])
+        XCTAssertEqual(Target.tileDetails(targets), [:])
+    }
+
     func testDigitOpensNthTarget() {
         var m = model()
         XCTAssertEqual(m.handle(.digit(2)), .open("b", always: false))
