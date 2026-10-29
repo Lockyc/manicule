@@ -58,6 +58,18 @@ final class LauncherWriterTests: XCTestCase {
         XCTAssertEqual(left, ["Docs – B.app", "keep.txt"])
     }
 
+    /// A browser that can't be read yet yields no specs; its launchers aren't stale, just unknown.
+    func testKeepsLaunchersOfBrowsersThatCantBeRead() throws {
+        let writer = LauncherWriter(home: home)
+        var chrome = spec("Docs – Work")
+        chrome.bundleID = "com.lockyc.manicule.launcher.docs.chrome.Profile-3"
+        XCTAssertTrue(writer.write([chrome]).isEmpty)
+        _ = writer.write([], keeping: [.chrome])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: writer.folder.path), ["Docs – Work.app"])
+        _ = writer.write([], keeping: [.chromium])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: writer.folder.path), [])
+    }
+
     func testSeparatorsInNameStayInsideFolder() throws {
         let writer = LauncherWriter(home: home)
         let failures = writer.write([spec("Docs – x/../../y"), spec("Docs – Work/Home")])

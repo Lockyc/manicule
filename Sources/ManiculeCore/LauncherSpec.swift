@@ -26,6 +26,17 @@ extension WebApp {
 }
 
 public enum LauncherSpecs {
+    /// Launcher bundle ids are `<prefix><app>.<browser>.<sanitised profile folder>`.
+    static let bundleIDPrefix = "com.lockyc.manicule.launcher."
+
+    /// The browser a launcher belongs to, read back from its bundle id.
+    public static func browser(fromBundleID id: String) -> Browser? {
+        guard id.hasPrefix(bundleIDPrefix) else { return nil }
+        let parts = id.dropFirst(bundleIDPrefix.count).split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        return Browser(rawValue: String(parts[1]))
+    }
+
     /// One launcher per visible Chrome/Chromium target and web app installed in its profile. A
     /// launcher is named after the target's short name, or its full name when another visible
     /// target shares that short name.
@@ -40,7 +51,7 @@ public enum LauncherSpecs {
             for app in [WebApp.docs, .sheets, .slides] where found.installedWebApps.contains(app.chromeAppID) {
                 specs.append(LauncherSpec(
                     appName: "\(app.displayName) – \(name)",
-                    bundleID: "com.lockyc.manicule.launcher.\(app.rawValue).\(target.browser.rawValue).\(sanitise(dir))",
+                    bundleID: "\(bundleIDPrefix)\(app.rawValue).\(target.browser.rawValue).\(sanitise(dir))",
                     chromeAppID: app.chromeAppID,
                     command: Launch.webAppCommand(app: app, target: target)))
             }

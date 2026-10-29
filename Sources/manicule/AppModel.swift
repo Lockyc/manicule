@@ -12,9 +12,18 @@ final class AppModel {
     @ObservationIgnored private let home: URL
     @ObservationIgnored private let launchers: LauncherWriter
     @ObservationIgnored private var writtenLaunchers: [LauncherSpec]?
+    @ObservationIgnored private var reloading = false
 
+    /// Every change is saved; launchers are rewritten only when targets or visibility change
+    /// (a history write never runs codesign), and by `reload` after a discovery.
     var config = Config(targets: [], visible: []) {
-        didSet { if config != oldValue { save(); refreshLaunchers() } }
+        didSet {
+            guard config != oldValue else { return }
+            save()
+            if !reloading, config.targets != oldValue.targets || config.visible != oldValue.visible {
+                refreshLaunchers()
+            }
+        }
     }
     /// The latest discovery; carries each profile's installed web apps, which the config doesn't store.
     private(set) var discovered: [DiscoveredProfile] = []
@@ -39,7 +48,9 @@ final class AppModel {
         var loaded = store.load(discovered: discovered)
         saveRefusal = store.saveRefusal
         loaded.merge(discovered: discovered)
+        reloading = true
         config = loaded
+        reloading = false
         refreshLaunchers()
     }
 
@@ -79,12 +90,14 @@ final class AppModel {
 }
 
 extension AppModel {
-    /// Rewrites the per-profile web-app launchers when the set they derive from has changed.
+    /// Rewrites the per-profile web-app launchers when the set they derive from has changed. Runs
+    /// on the main thread; it is called only on target, visibility or discovery changes, and an
+    /// unchanged bundle is never re-signed. Launchers of a browser that can't be read yet are kept.
     private func refreshLaunchers() {
         let shown = Set(config.visible)
         let specs = LauncherSpecs.make(visible: config.targets.filter { shown.contains($0.id) }, profiles: discovered)
         guard specs != writtenLaunchers else { return }
-        let failures = launchers.write(specs)
+        let failures = launchers.write(specs, keeping: Set(unreadable.map(\.browser)))
         for failure in failures {
             Self.log.error("launcher write failed: \(failure.description, privacy: .public)")
         }

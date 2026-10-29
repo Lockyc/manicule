@@ -20,8 +20,9 @@ struct LauncherWriter {
     }
 
     /// Brings `folder` in line with `specs`; returns what could not be written. A bundle already
-    /// on disk exactly as it would be written is left untouched.
-    func write(_ specs: [LauncherSpec]) -> [Failure] {
+    /// on disk exactly as it would be written is left untouched, and so is one belonging to a
+    /// browser in `keeping` (one that can't be read now, so yields no specs).
+    func write(_ specs: [LauncherSpec], keeping: Set<Browser> = []) -> [Failure] {
         let fm = FileManager.default
         var failures: [Failure] = []
         do { try fm.createDirectory(at: folder, withIntermediateDirectories: true) } catch {
@@ -30,7 +31,10 @@ struct LauncherWriter {
         let wanted = Set(specs.map { Self.fileName($0.appName) })
         for name in (try? fm.contentsOfDirectory(atPath: folder.path)) ?? []
         where name.hasSuffix(".app") && !wanted.contains(name) {
-            do { try fm.removeItem(at: folder.appendingPathComponent(name)) } catch {
+            let bundle = folder.appendingPathComponent(name)
+            let id = NSDictionary(contentsOf: bundle.appendingPathComponent("Contents/Info.plist"))?["CFBundleIdentifier"] as? String
+            if let browser = id.flatMap(LauncherSpecs.browser(fromBundleID:)), keeping.contains(browser) { continue }
+            do { try fm.removeItem(at: bundle) } catch {
                 failures.append(Failure(app: name, reason: error.localizedDescription))
             }
         }

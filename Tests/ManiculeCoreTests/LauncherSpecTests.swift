@@ -63,6 +63,13 @@ final class LauncherSpecTests: XCTestCase {
         XCTAssertEqual(specs.map(\.appName), ["Docs – Work"])
     }
 
+    func testBrowserReadBackFromBundleID() {
+        XCTAssertEqual(LauncherSpecs.browser(fromBundleID: "com.lockyc.manicule.launcher.docs.chromium.Profile-3"), .chromium)
+        XCTAssertEqual(LauncherSpecs.browser(fromBundleID: "com.lockyc.manicule.launcher.sheets.chrome.Default"), .chrome)
+        XCTAssertNil(LauncherSpecs.browser(fromBundleID: "com.lockyc.manicule.launcher.docs.Profile-3"))
+        XCTAssertNil(LauncherSpecs.browser(fromBundleID: "com.example.other"))
+    }
+
     func testScriptQuotesSpacesAndSingleQuotes() {
         let cmd = LaunchCommand(executable: "/usr/bin/open", arguments: ["-na", "Google Chrome", "it's here"])
         XCTAssertEqual(LauncherSpecs.script(for: cmd),

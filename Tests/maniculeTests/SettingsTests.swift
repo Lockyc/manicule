@@ -38,6 +38,29 @@ final class SettingsTests: XCTestCase {
         return AppModel(store: ConfigStore(directory: dir), home: home)
     }
 
+    /// Launchers are rewritten only when targets, visibility or discovery change — a history
+    /// write never re-runs codesign, even after an earlier write failed.
+    func testHistoryWritesDoNotRegenerateLaunchers() throws {
+        let chrome = home.appendingPathComponent("Library/Application Support/Google/Chrome")
+        try FileManager.default.createDirectory(
+            at: chrome.appendingPathComponent("Default/Web Applications/Manifest Resources/\(WebApp.docs.chromeAppID)"),
+            withIntermediateDirectories: true)
+        try localState.write(to: chrome.appendingPathComponent("Local State"), atomically: true, encoding: .utf8)
+        let folder = home.appendingPathComponent("Applications/Manicule Launchers")
+        try FileManager.default.createDirectory(at: folder.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data().write(to: folder)  // a file where the folder goes: the first write fails
+
+        let model = try seededModel()
+        try FileManager.default.removeItem(at: folder)
+        model.config.recordOutcome(IncomingLink(url: URL(string: "https://example.com")!, sourceApp: nil,
+                                                receivedAt: Date()), target: nil)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path))
+
+        model.config.setVisible("chrome|Default", false)
+        model.config.setVisible("chrome|Default", true)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("Docs – Work.app").path))
+    }
+
     func testUnsavableConfigIsReportedAndLeftAlone() throws {
         _ = try seededModel()
         let file = dir.appendingPathComponent("config.json")
