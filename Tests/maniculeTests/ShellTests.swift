@@ -1,8 +1,9 @@
 import XCTest
+import ManiculeCore
 @testable import manicule
 
 final class ShellTests: XCTestCase {
-    func testShellTargetLinks() {
-        XCTAssertTrue(true)
+    func testShellSeesCoreAcrossModuleBoundary() {
+        XCTAssertEqual(Manicule.name, "manicule")
     }
 }
