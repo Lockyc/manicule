@@ -73,6 +73,24 @@ extension Config {
         }
     }
 
+    /// Shows or hides a target in the picker. `visible` follows `targets` order, so the picker's
+    /// order is the order the user arranges targets in.
+    public mutating func setVisible(_ id: Target.ID, _ isVisible: Bool) {
+        var shown = Set(visible)
+        if isVisible { shown.insert(id) } else { shown.remove(id) }
+        visible = targets.map(\.id).filter(shown.contains)
+    }
+
+    /// Reorders targets (List.onMove's arguments); `visible` follows.
+    public mutating func moveTargets(fromOffsets source: IndexSet, toOffset destination: Int) {
+        let moving = source.map { targets[$0] }
+        var rest = targets.enumerated().filter { !source.contains($0.offset) }.map(\.element)
+        rest.insert(contentsOf: moving, at: destination - source.filter { $0 < destination }.count)
+        targets = rest
+        let shown = Set(visible)
+        visible = targets.map(\.id).filter(shown.contains)
+    }
+
     /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule.
     public mutating func recordPick(_ link: IncomingLink, target: Target.ID, always: Bool) {
         let host = link.url.host?.lowercased()
