@@ -27,6 +27,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         config = store.load(discovered: discovered)
     }
 
+    private var statusItem: StatusItemController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        statusItem = StatusItemController(
+            recent: { [unowned self] in RecentItem.items(from: config) },
+            openAgain: { [unowned self] entry in
+                receive(IncomingLink(url: entry.url, sourceApp: entry.sourceApp, receivedAt: Date()))
+            },
+            showSettings: { [unowned self] in showSettings() })
+    }
+
+    /// Filled in by the Settings window task.
+    func showSettings() {
+        Self.log.info("Settings requested; not built yet")
+    }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSAppleEventManager.shared().setEventHandler(
             self, andSelector: #selector(handleGetURL(_:replyEvent:)),
