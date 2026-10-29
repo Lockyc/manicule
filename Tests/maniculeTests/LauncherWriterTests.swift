@@ -26,14 +26,14 @@ final class LauncherWriterTests: XCTestCase {
 
     func testWritesBundleWithExecutableScriptAndPlist() throws {
         let writer = LauncherWriter(home: home)
-        _ = writer.write([spec("Docs – LSJC")])
-        let app = writer.folder.appendingPathComponent("Docs – LSJC.app/Contents")
+        _ = writer.write([spec("Docs – Work")])
+        let app = writer.folder.appendingPathComponent("Docs – Work.app/Contents")
         let script = app.appendingPathComponent("MacOS/launch")
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: script.path))
         XCTAssertEqual(try String(contentsOf: script, encoding: .utf8), "#!/bin/sh\nexec '/usr/bin/open' '-na' 'Google Chrome'\n")
         let plist = try XCTUnwrap(NSDictionary(contentsOf: app.appendingPathComponent("Info.plist")))
         XCTAssertEqual(plist["CFBundleExecutable"] as? String, "launch")
-        XCTAssertEqual(plist["CFBundleName"] as? String, "Docs – LSJC")
+        XCTAssertEqual(plist["CFBundleName"] as? String, "Docs – Work")
         XCTAssertEqual(plist["LSUIElement"] as? Bool, true)
         XCTAssertNil(plist["CFBundleIconFile"])
     }
@@ -41,8 +41,8 @@ final class LauncherWriterTests: XCTestCase {
     func testCopiesIconFromChromeShimAndLeavesShimsAlone() throws {
         try addShim(withIcon: true)
         let writer = LauncherWriter(home: home)
-        _ = writer.write([spec("Docs – LSJC")])
-        let app = writer.folder.appendingPathComponent("Docs – LSJC.app/Contents")
+        _ = writer.write([spec("Docs – Work")])
+        let app = writer.folder.appendingPathComponent("Docs – Work.app/Contents")
         XCTAssertTrue(FileManager.default.fileExists(atPath: app.appendingPathComponent("Resources/app.icns").path))
         let plist = try XCTUnwrap(NSDictionary(contentsOf: app.appendingPathComponent("Info.plist")))
         XCTAssertEqual(plist["CFBundleIconFile"] as? String, "app")
@@ -70,11 +70,11 @@ final class LauncherWriterTests: XCTestCase {
 
     func testUnchangedBundleIsNotRewritten() throws {
         let writer = LauncherWriter(home: home)
-        _ = writer.write([spec("Docs – LSJC")])
-        let plist = writer.folder.appendingPathComponent("Docs – LSJC.app/Contents/Info.plist")
+        _ = writer.write([spec("Docs – Work")])
+        let plist = writer.folder.appendingPathComponent("Docs – Work.app/Contents/Info.plist")
         let past = Date(timeIntervalSince1970: 1_000_000)
         try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: plist.path)
-        XCTAssertTrue(writer.write([spec("Docs – LSJC")]).isEmpty)
+        XCTAssertTrue(writer.write([spec("Docs – Work")]).isEmpty)
         let after = try FileManager.default.attributesOfItem(atPath: plist.path)[.modificationDate] as? Date
         XCTAssertEqual(after, past)
     }
@@ -82,12 +82,12 @@ final class LauncherWriterTests: XCTestCase {
     func testFailedSigningRemovesBundleAndNextWriteRebuilds() throws {
         var writer = LauncherWriter(home: home)
         writer.signer = URL(fileURLWithPath: "/usr/bin/false")
-        let failures = writer.write([spec("Docs – LSJC")])
+        let failures = writer.write([spec("Docs – Work")])
         XCTAssertEqual(failures.count, 1)
-        let bundle = writer.folder.appendingPathComponent("Docs – LSJC.app")
+        let bundle = writer.folder.appendingPathComponent("Docs – Work.app")
         XCTAssertFalse(FileManager.default.fileExists(atPath: bundle.path))
         writer.signer = URL(fileURLWithPath: "/usr/bin/codesign")
-        XCTAssertTrue(writer.write([spec("Docs – LSJC")]).isEmpty)
+        XCTAssertTrue(writer.write([spec("Docs – Work")]).isEmpty)
         let verify = Process()
         verify.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
         verify.arguments = ["--verify", bundle.path]

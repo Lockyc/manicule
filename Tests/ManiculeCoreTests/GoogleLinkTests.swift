@@ -62,9 +62,9 @@ final class GoogleLinkTests: XCTestCase {
     }
 
     func testAuthuserEmailDecodedAndLowercased() {
-        let l = link("https://docs.google.com/open?id=\(opened)&authuser=Lachlan%40Example.COM&usp=drive_fs")
+        let l = link("https://docs.google.com/open?id=\(opened)&authuser=Someone%40Example.COM&usp=drive_fs")
         XCTAssertEqual(l?.fileID, opened)
-        XCTAssertEqual(l?.email, "lachlan@example.com")
+        XCTAssertEqual(l?.email, "someone@example.com")
     }
 
     func testPathEmail() {

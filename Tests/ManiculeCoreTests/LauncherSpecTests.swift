@@ -14,8 +14,8 @@ final class LauncherSpecTests: XCTestCase {
 
     func testOneLauncherPerVisibleProfileAndInstalledApp() {
         let specs = LauncherSpecs.make(
-            visible: [target("a", .chrome, "Profile 26", "Chrome · LSJC")],
-            profiles: [profile(.chrome, "Profile 26", apps: [docsID, sheetsID])])
+            visible: [target("a", .chrome, "Profile 3", "Chrome · Work")],
+            profiles: [profile(.chrome, "Profile 3", apps: [docsID, sheetsID])])
         XCTAssertEqual(specs.count, 2)
         XCTAssertEqual(specs.map(\.chromeAppID), [docsID, sheetsID])
     }
@@ -23,7 +23,7 @@ final class LauncherSpecTests: XCTestCase {
     func testHiddenTargetsGetNone() {
         let specs = LauncherSpecs.make(
             visible: [target("a", .chrome, "Default", "Chrome · Home")],
-            profiles: [profile(.chrome, "Default", apps: [docsID]), profile(.chrome, "Profile 26", apps: [docsID])])
+            profiles: [profile(.chrome, "Default", apps: [docsID]), profile(.chrome, "Profile 3", apps: [docsID])])
         XCTAssertEqual(specs.map(\.appName), ["Docs – Home"])
         XCTAssertTrue(LauncherSpecs.make(visible: [], profiles: [profile(.chrome, "Default", apps: [docsID])]).isEmpty)
     }
@@ -37,13 +37,13 @@ final class LauncherSpecTests: XCTestCase {
 
     func testNamesAndBundleIDs() {
         let specs = LauncherSpecs.make(
-            visible: [target("a", .chrome, "Profile 26", "Chrome · LSJC")],
-            profiles: [profile(.chrome, "Profile 26", apps: [docsID])])
+            visible: [target("a", .chrome, "Profile 3", "Chrome · Work")],
+            profiles: [profile(.chrome, "Profile 3", apps: [docsID])])
         XCTAssertEqual(specs, [LauncherSpec(
-            appName: "Docs – LSJC",
-            bundleID: "com.lockyc.manicule.launcher.docs.Profile-26",
+            appName: "Docs – Work",
+            bundleID: "com.lockyc.manicule.launcher.docs.Profile-3",
             chromeAppID: docsID,
-            command: Launch.webAppCommand(app: .docs, target: target("a", .chrome, "Profile 26", "Chrome · LSJC")))])
+            command: Launch.webAppCommand(app: .docs, target: target("a", .chrome, "Profile 3", "Chrome · Work")))])
     }
 
     func testScriptQuotesSpacesAndSingleQuotes() {

@@ -91,7 +91,7 @@ final class ConfigStoreTests: XCTestCase {
     func testMergeRefreshesEmailKeepsNameAndOrder() {
         var c = Config.defaults(from: discovered)
         c.targets.reverse()
-        c.targets[3].name = "Collins"
+        c.targets[3].name = "Renamed by me"
         c.targets[3].email = "old@example.test"
         c.visible = ["chrome|Default"]
         var renamed = discovered
