@@ -26,17 +26,21 @@ extension WebApp {
 }
 
 public enum LauncherSpecs {
-    /// One launcher per visible Chrome/Chromium target and web app installed in its profile.
+    /// One launcher per visible Chrome/Chromium target and web app installed in its profile. A
+    /// launcher is named after the target's short name, or its full name when another visible
+    /// target shares that short name.
     public static func make(visible: [Target], profiles: [DiscoveredProfile]) -> [LauncherSpec] {
         var specs: [LauncherSpec] = []
+        let shortNames = Dictionary(grouping: visible, by: \.shortName)
         for target in visible where target.browser == .chrome || target.browser == .chromium {
             guard let dir = target.profile,
                   let found = profiles.first(where: { $0.browser == target.browser && $0.directory == dir })
             else { continue }
+            let name = (shortNames[target.shortName]?.count ?? 0) > 1 ? target.name : target.shortName
             for app in [WebApp.docs, .sheets, .slides] where found.installedWebApps.contains(app.chromeAppID) {
                 specs.append(LauncherSpec(
-                    appName: "\(app.displayName) – \(target.shortName)",
-                    bundleID: "com.lockyc.manicule.launcher.\(app.rawValue).\(sanitise(dir))",
+                    appName: "\(app.displayName) – \(name)",
+                    bundleID: "com.lockyc.manicule.launcher.\(app.rawValue).\(target.browser.rawValue).\(sanitise(dir))",
                     chromeAppID: app.chromeAppID,
                     command: Launch.webAppCommand(app: app, target: target)))
             }

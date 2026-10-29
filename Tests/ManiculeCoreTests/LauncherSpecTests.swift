@@ -41,9 +41,26 @@ final class LauncherSpecTests: XCTestCase {
             profiles: [profile(.chrome, "Profile 3", apps: [docsID])])
         XCTAssertEqual(specs, [LauncherSpec(
             appName: "Docs – Work",
-            bundleID: "com.lockyc.manicule.launcher.docs.Profile-3",
+            bundleID: "com.lockyc.manicule.launcher.docs.chrome.Profile-3",
             chromeAppID: docsID,
             command: Launch.webAppCommand(app: .docs, target: target("a", .chrome, "Profile 3", "Chrome · Work")))])
+    }
+
+    /// Chrome and Chromium can both have a "Default" profile named "Work": the launchers must not collide.
+    func testSameFolderAndShortNameInTwoBrowsersStayDistinct() {
+        let specs = LauncherSpecs.make(
+            visible: [target("a", .chrome, "Default", "Chrome · Work"), target("b", .chromium, "Default", "Chromium · Work")],
+            profiles: [profile(.chrome, "Default", apps: [docsID]), profile(.chromium, "Default", apps: [docsID])])
+        XCTAssertEqual(specs.map(\.appName), ["Docs – Chrome · Work", "Docs – Chromium · Work"])
+        XCTAssertEqual(specs.map(\.bundleID), ["com.lockyc.manicule.launcher.docs.chrome.Default",
+                                               "com.lockyc.manicule.launcher.docs.chromium.Default"])
+    }
+
+    func testSharedShortNameCountsOnlyVisibleTargets() {
+        let specs = LauncherSpecs.make(
+            visible: [target("a", .chrome, "Default", "Chrome · Work"), target("f", .firefox, "x", "Firefox · Home")],
+            profiles: [profile(.chrome, "Default", apps: [docsID])])
+        XCTAssertEqual(specs.map(\.appName), ["Docs – Work"])
     }
 
     func testScriptQuotesSpacesAndSingleQuotes() {
