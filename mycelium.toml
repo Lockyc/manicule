@@ -1,0 +1,13 @@
+name    = "manicule"
+summary = "macOS menu-bar default browser that routes each link to the right browser profile, with a fast icon-strip picker and rules learned from your picks."
+kind    = "app"
+status  = "active"
+tags    = ["browser", "macos", "link-router"]
+stack   = ["swift", "appkit"]
+
+[github]
+topics_extra = ["appkit", "default-browser", "browser-profiles", "link-router", "menu-bar"]
+
+[[provides]]
+name    = "link-routing"
+summary = "Default macOS browser that opens each http/https link in the right browser profile"
