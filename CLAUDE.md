@@ -47,18 +47,24 @@ Evaluated in order; the first that resolves wins.
    source app → target. Ordered, first match wins, opens immediately. `⌥⏎` in the picker creates
    a host-suffix rule.
 3. **Remembered document** — a Google file ID the user has picked a profile for before.
-4. **Picker** — icon strip under the cursor, pre-selected on the last target chosen for the host.
+4. **Picker** — icon strip under the cursor: the **pinned** targets grouped by browser, then a
+   ⋯ tile whose menu holds the other available targets. Pre-selected on the last target chosen
+   for the host (⋯ when that target is unpinned).
 
 Only **available** targets count: found by this run's discovery, or in a browser whose profile
-file can't be read yet. Any other target is dangling in every step and left out of the strip;
+file can't be read yet. Any other target is dangling in every step and left out of the picker;
 Settings still lists it, marked "Not found on this Mac".
+
+Order: `Config.browserOrder` orders the browsers, `targets` orders profiles within a browser
+(`Config.orderedTargets`); the picker and Settings' sections both follow it. `visible` is the
+stored list of pinned targets.
 
 ## Profiles
 
 macOS withholds Chrome's `Local State` and Firefox's `profiles.ini` until the user picks that
 exact folder in an open panel (Settings → General → Grant Access…); Chromium's is readable.
 Discovery runs at launch, when Settings opens and after a grant. Profiles found later merge into
-the config **hidden**; discovery refreshes emails but never renames, reorders, shows or removes a
+the config **unpinned**; discovery refreshes emails but never renames, reorders, pins or removes a
 target.
 
 A Google file opens in the profile's web app when installed there:

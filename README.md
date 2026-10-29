@@ -28,8 +28,9 @@ Click ☞ in the menu bar and open Settings.
 1. **General → Make Manicule the Default Browser** (macOS asks you to confirm).
 2. **General → Browser access** — click Grant Access… for each browser listed (Chrome, Firefox)
    and then Open in the panel; macOS keeps their profile lists from Manicule until you do.
-3. **Targets** — tick "In picker" for the profiles you want in the picker strip and drag them
-   into order. Profiles found later arrive unticked.
+3. **Targets** — tick **Pinned** for the profiles you want in the picker strip; the rest wait
+   under its ⋯ menu (or press `0`). Drag browsers and profiles into order. Profiles found later
+   arrive unpinned.
 4. **General → Import rules from Velja**, if you are coming from Velja.
 
 ## Build & test

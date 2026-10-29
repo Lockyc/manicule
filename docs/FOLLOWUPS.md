@@ -42,7 +42,7 @@ Deliberately deferred work. Remove an entry when it ships.
 - **Save-refusal notice on every tab.** When the config file can't be safely written, only
   General says so; edits on other tabs look saved until Settings reloads. Unlock: show the
   notice in the window title or on every tab.
-- **Wide picker strips.** The strip is one row of fixed-width tiles; past about 25 visible
+- **Wide picker strips.** The strip is one row of fixed-width tiles; past about 25 pinned
   targets it is wider than the screen and tiles fall off the edge. Deferred: the strip is meant
-  for a curated handful (nine have number keys). Unlock: someone showing that many — cap the
+  for a curated handful (nine have number keys), with the rest under ⋯. Unlock: someone showing that many — cap the
   width and scroll, or wrap to a second row.
