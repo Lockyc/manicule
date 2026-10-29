@@ -26,7 +26,9 @@ final class VeljaImportTests: XCTestCase {
     func testMapsMatcherKindsAndSkipsUnknownMatchers() {
         let m = #"[{"kind":"hostExact","pattern":"a.com"},{"kind":"host","pattern":"b.com"},{"kind":"urlContains","pattern":"x"},{"kind":"weird","pattern":"y"}]"#
         let r = VeljaImport.rules(fromPreferences: plist([json(matchers: m)]), targets: targets)
-        XCTAssertEqual(r[0].matchers, [.hostExact("a.com"), .hostExact("b.com"), .urlContains("x")])
+        XCTAssertEqual(r.map(\.matchers), [[.hostExact("a.com")], [.hostExact("b.com")], [.urlContains("x")]])
+        XCTAssertEqual(r.map(\.title), ["t", "t (2)", "t (3)"])
+        XCTAssertEqual(Set(r.map(\.target)), [firefox.id])
     }
 
     func testRuleWithOnlyUnknownMatchersIsSkipped() {

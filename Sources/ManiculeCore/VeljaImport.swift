@@ -24,12 +24,11 @@ public enum VeljaImport {
                 continue
             }
             if obj["isEnabled"] as? Bool == false { continue }
-            guard let rule = map(obj, targets: targets) else {
-                skipped += 1
-                continue
+            let rules = map(obj, targets: targets)
+            if rules.isEmpty { skipped += 1 }
+            for rule in rules where !(existing + out).contains(where: { same($0, rule) }) {
+                out.append(rule)
             }
-            if (existing + out).contains(where: { same($0, rule) }) { continue }
-            out.append(rule)
         }
         return Result(rules: out, skipped: skipped)
     }
@@ -38,7 +37,9 @@ public enum VeljaImport {
         a.matchers == b.matchers && a.sourceApp == b.sourceApp && a.target == b.target
     }
 
-    private static func map(_ obj: [String: Any], targets: [Target]) -> Rule? {
+    /// Velja's matchers are alternatives (any one matches) while a Manicule rule needs all of its
+    /// matchers, so each mappable Velja matcher becomes its own rule.
+    private static func map(_ obj: [String: Any], targets: [Target]) -> [Rule] {
         let matchers = (obj["matchers"] as? [[String: Any]] ?? []).compactMap { m -> Matcher? in
             guard let kind = m["kind"] as? String, let pattern = m["pattern"] as? String else { return nil }
             switch kind {
@@ -48,14 +49,15 @@ public enum VeljaImport {
             default: return nil
             }
         }
-        guard !matchers.isEmpty else { return nil }
         let sources = obj["sourceApps"] as? [String] ?? []
-        guard sources.count <= 1 else { return nil }
-        let raw = (obj["openTarget"] as? String).map { $0.hasPrefix("browser:") ? String($0.dropFirst(8)) : $0 }
+        let prefix = "browser:"
+        let raw = (obj["openTarget"] as? String).map { $0.hasPrefix(prefix) ? String($0.dropFirst(prefix.count)) : $0 }
             ?? obj["browser"] as? String
-        guard let raw, let target = target(for: raw, in: targets) else { return nil }
-        return Rule(title: obj["title"] as? String ?? "Imported from Velja", matchers: matchers,
-                    sourceApp: sources.first, target: target.id)
+        guard !matchers.isEmpty, sources.count <= 1, let raw, let target = target(for: raw, in: targets) else { return [] }
+        let title = obj["title"] as? String ?? "Imported from Velja"
+        return matchers.enumerated().map { i, m in
+            Rule(title: i == 0 ? title : "\(title) (\(i + 1))", matchers: [m], sourceApp: sources.first, target: target.id)
+        }
     }
 
     private static func target(for spec: String, in targets: [Target]) -> Target? {
