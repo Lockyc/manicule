@@ -10,13 +10,16 @@ final class SettingsWindowController {
 
     init(model: AppModel) {
         self.model = model
+        // Sized before the content attaches: SwiftUI's first layout at zero size logs a negative width.
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
+                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                          backing: .buffered, defer: true)
         let hosting = NSHostingController(rootView: SettingsView(model: model))
         hosting.sizingOptions = [.minSize]
-        window = NSWindow(contentViewController: hosting)
-        window.title = "Manicule Settings"
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.isReleasedWhenClosed = false
+        window.contentViewController = hosting
         window.setContentSize(NSSize(width: 760, height: 540))
+        window.title = "Manicule Settings"
+        window.isReleasedWhenClosed = false
         window.center()
     }
 
@@ -144,8 +147,7 @@ struct RuleRow: View {
                 Button(role: .destructive, action: delete) { Label("Delete Rule", systemImage: "trash") }
             }
             if rule.matchers.isEmpty {
-                Text(rule.sourceApp == nil ? "No conditions: matches every link." : "No conditions: matches every link from this app.")
-                    .foregroundStyle(.secondary)
+                Text("Add a condition — this rule is off until it has one").foregroundStyle(.secondary)
             }
             ForEach(Array(rule.matchers.indices), id: \.self) { index in
                 HStack {

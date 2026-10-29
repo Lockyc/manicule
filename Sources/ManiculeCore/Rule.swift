@@ -101,9 +101,10 @@ public struct Rule: Codable, Hashable, Identifiable, Sendable {
         self.isEnabled = isEnabled
     }
 
-    /// Enabled, source app (when set) equal, and every matcher holds.
+    /// Enabled, at least one matcher, source app (when set) equal, and every matcher holds. A rule
+    /// with no matchers never matches: emptying one while editing must not open every link silently.
     public func matches(url: URL, sourceApp: String?) -> Bool {
-        guard isEnabled else { return false }
+        guard isEnabled, !matchers.isEmpty else { return false }
         if let required = self.sourceApp, required != sourceApp { return false }
         return matchers.allSatisfy { $0.matches(url) }
     }

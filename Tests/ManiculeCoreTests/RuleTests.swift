@@ -15,6 +15,12 @@ final class RuleTests: XCTestCase {
         XCTAssertFalse(m.matches(url("https://notexample.test/a")))
     }
 
+    func testRuleWithoutConditionsNeverMatches() {
+        XCTAssertFalse(rule([]).matches(url: url("https://example.test/"), sourceApp: nil))
+        XCTAssertFalse(rule([], sourceApp: "com.example.Mail").matches(url: url("https://example.test/"),
+                                                                      sourceApp: "com.example.Mail"))
+    }
+
     func testAllMatchersMustHold() {
         let r = rule([.hostExact("docs.example.test"), .pathContains("/u/1/")])
         XCTAssertTrue(r.matches(url: url("https://docs.example.test/u/1/document/d/X"), sourceApp: nil))
