@@ -48,12 +48,12 @@ extension Config {
         let firefoxCount = discovered.filter { $0.browser == .firefox }.count
         let separator = Target.nameSeparator
         let targets = discovered.map { p -> Target in
+            let browser = p.browser.displayName
             let name: String
             switch p.browser {
-            case .chrome: name = "Chrome\(separator)\(p.name)"
-            case .chromium: name = "Chromium\(separator)\(p.name)"
-            case .firefox: name = firefoxCount > 1 ? "Firefox\(separator)\(p.name)" : "Firefox"
-            case .safari: name = "Safari"
+            case .chrome, .chromium: name = "\(browser)\(separator)\(p.name)"
+            case .firefox: name = firefoxCount > 1 ? "\(browser)\(separator)\(p.name)" : browser
+            case .safari: name = browser
             }
             return Target(id: "\(p.browser.rawValue)|\(p.directory)", browser: p.browser,
                           profile: p.directory.isEmpty ? nil : p.directory, name: name, email: p.email)

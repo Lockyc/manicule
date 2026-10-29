@@ -3,6 +3,15 @@ import Foundation
 public enum Browser: String, Codable, CaseIterable, Sendable {
     case chrome, chromium, firefox, safari
 
+    public var displayName: String {
+        switch self {
+        case .chrome: "Chrome"
+        case .chromium: "Chromium"
+        case .firefox: "Firefox"
+        case .safari: "Safari"
+        }
+    }
+
     public var bundleID: String {
         switch self {
         case .chrome: "com.google.Chrome"

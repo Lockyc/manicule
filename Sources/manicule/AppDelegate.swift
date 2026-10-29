@@ -6,44 +6,32 @@ import os
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let log = Logger(subsystem: "com.lockyc.manicule", category: "app")
 
-    private let store: ConfigStore
+    private let model: AppModel
     private let launcher = Launcher()
     private let picker = PickerPanel()
     private var queue = LinkQueue()
-    private var discovered: [DiscoveredProfile] = []
-    private var config: Config
+    private var statusItem: StatusItemController?
+    private var settings: SettingsWindowController?
 
     override init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        store = ConfigStore(directory: support.appendingPathComponent("Manicule"))
-        config = Config(targets: [], visible: [])
+        model = AppModel(store: ConfigStore(directory: support.appendingPathComponent("Manicule")))
         super.init()
-        reload()
     }
-
-    /// Re-reads installed browser profiles and the saved config, merges profiles found since, and
-    /// saves. Also run when Settings opens.
-    func reload() {
-        discovered = ProfileDiscovery.discoverAll(home: FileManager.default.homeDirectoryForCurrentUser)
-        config = store.load(discovered: discovered)
-        config.merge(discovered: discovered)
-        persist()
-    }
-
-    private var statusItem: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = MainMenu.make()
         statusItem = StatusItemController(
-            recent: { [unowned self] in RecentItem.items(from: config) },
+            recent: { [unowned self] in RecentItem.items(from: model.config) },
             openAgain: { [unowned self] entry in
                 receive(IncomingLink(url: entry.url, sourceApp: entry.sourceApp, receivedAt: Date()))
             },
             showSettings: { [unowned self] in showSettings() })
     }
 
-    /// Filled in by the Settings window task.
     func showSettings() {
-        Self.log.info("Settings requested; not built yet")
+        if settings == nil { settings = SettingsWindowController(model: model) }
+        settings?.show()
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -64,18 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func receive(_ link: IncomingLink) {
-        switch Router.decide(link, state: config.routerState) {
+        switch Router.decide(link, state: model.config.routerState) {
         case .open(let target, _):
             open(link, in: target)
-            config.recordOutcome(link, target: target.id)
-            persist()
+            model.config.recordOutcome(link, target: target.id)
         case .pick(let preselected):
             if queue.enqueue(link) { present(link, preselected: preselected) }
         }
     }
 
     private func present(_ link: IncomingLink, preselected: Target.ID?) {
-        let targets = config.visible.compactMap { id in config.targets.first { $0.id == id } }
+        let targets = model.config.visible.compactMap { model.target($0) }
         picker.show(link, targets: targets, preselected: preselected) { [weak self] action in
             self?.finish(link, action)
         }
@@ -84,9 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func finish(_ link: IncomingLink, _ action: PickerAction) {
         switch action {
         case .open(let id, let always):
-            config.recordPick(link, target: id, always: always)
-            config.recordOutcome(link, target: id)
-            if let target = config.targets.first(where: { $0.id == id }) {
+            model.config.recordPick(link, target: id, always: always)
+            model.config.recordOutcome(link, target: id)
+            if let target = model.target(id) {
                 open(link, in: target)
             } else {
                 Self.log.error("picked target \(id, privacy: .public) is not in the config")
@@ -94,11 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .copy(let url):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(url.absoluteString, forType: .string)
-            config.recordOutcome(link, target: nil)
+            model.config.recordOutcome(link, target: nil)
         case .cancel:
-            config.recordOutcome(link, target: nil)
+            model.config.recordOutcome(link, target: nil)
         }
-        persist()
         showNext()
     }
 
@@ -107,21 +93,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showNext() {
         var next = queue.resolveCurrent()
         while let link = next {
-            switch Router.decide(link, state: config.routerState) {
+            switch Router.decide(link, state: model.config.routerState) {
             case .pick(let preselected):
                 present(link, preselected: preselected)
                 return
             case .open(let target, _):
                 open(link, in: target)
-                config.recordOutcome(link, target: target.id)
-                persist()
+                model.config.recordOutcome(link, target: target.id)
                 next = queue.resolveCurrent()
             }
         }
     }
 
     private func open(_ link: IncomingLink, in target: Target) {
-        let apps = discovered.first { $0.browser == target.browser && ($0.directory == (target.profile ?? "")) }?
+        let apps = model.discovered
+            .first { $0.browser == target.browser && ($0.directory == (target.profile ?? "")) }?
             .installedWebApps ?? []
         let command: LaunchCommand
         if target.browser == .firefox,
@@ -132,12 +118,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         do { try launcher.run(command) } catch {
             Self.log.error("launch failed for \(target.name, privacy: .public): \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    private func persist() {
-        do { try store.save(config) } catch {
-            Self.log.error("config save failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

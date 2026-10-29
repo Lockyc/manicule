@@ -1,0 +1,334 @@
+import AppKit
+import ManiculeCore
+import SwiftUI
+
+/// Settings, hosted in a plain window (an LSUIElement app has no Settings scene). Created once.
+@MainActor
+final class SettingsWindowController {
+    private let model: AppModel
+    let window: NSWindow
+
+    init(model: AppModel) {
+        self.model = model
+        let hosting = NSHostingController(rootView: SettingsView(model: model))
+        hosting.sizingOptions = [.minSize]
+        window = NSWindow(contentViewController: hosting)
+        window.title = "Manicule Settings"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.isReleasedWhenClosed = false
+        window.setContentSize(NSSize(width: 760, height: 540))
+        window.center()
+    }
+
+    /// Rediscovers profiles (so newly granted or created ones appear), then brings the window front.
+    func show() {
+        model.reload()
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+    }
+}
+
+struct SettingsView: View {
+    let model: AppModel
+
+    var body: some View {
+        TabView {
+            TargetsTab(model: model).tabItem { Label("Targets", systemImage: "person.2") }
+            RulesTab(model: model).tabItem { Label("Rules", systemImage: "arrow.triangle.branch") }
+            DocumentsTab(model: model).tabItem { Label("Documents", systemImage: "doc") }
+            GeneralTab(model: model).tabItem { Label("General", systemImage: "gearshape") }
+        }
+        .padding()
+        .frame(minWidth: 680, minHeight: 440)
+    }
+}
+
+/// A line of text centred over an empty list, so the list keeps its place.
+private struct EmptyNote: View {
+    let text: String
+    var body: some View {
+        Text(text).foregroundStyle(.secondary).multilineTextAlignment(.center).padding().frame(maxWidth: 420)
+    }
+}
+
+// MARK: - Targets
+
+struct TargetsTab: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Targets marked “In picker” appear in the picker in this order. Drag a row to reorder.")
+                .foregroundStyle(.secondary)
+            List {
+                ForEach($model.config.targets) { $target in
+                    HStack(spacing: 10) {
+                        Toggle("In picker", isOn: Binding(
+                            get: { model.config.visible.contains(target.id) },
+                            set: { model.config.setVisible(target.id, $0) }))
+                            .toggleStyle(.checkbox)
+                        Image(nsImage: ProfileIcon.image(for: target))
+                            .resizable().frame(width: 24, height: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            TextField("Name", text: $target.name)
+                            Text(Self.detail(target)).font(.caption).foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onMove { model.config.moveTargets(fromOffsets: $0, toOffset: $1) }
+            }
+            .overlay {
+                if model.config.targets.isEmpty {
+                    EmptyNote(text: "No browser profiles found. Grant access to your browsers under General.")
+                }
+            }
+        }
+    }
+
+    static func detail(_ target: Target) -> String {
+        var parts = [target.browser.displayName]
+        parts.append(target.email ?? "No account")
+        if let profile = target.profile { parts.append("Folder: \(profile)") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Rules
+
+struct RulesTab: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Rules are checked top to bottom; the first that matches opens the link without the picker. Drag a rule to reorder.")
+                .foregroundStyle(.secondary)
+            List {
+                ForEach($model.config.rules) { $rule in
+                    RuleRow(rule: $rule, targets: model.config.targets) {
+                        model.config.rules.removeAll { $0.id == rule.id }
+                    }
+                }
+                .onMove { model.config.rules.move(fromOffsets: $0, toOffset: $1) }
+            }
+            .overlay {
+                if model.config.rules.isEmpty {
+                    EmptyNote(text: "No rules yet. Add one here, or press ⌥⏎ in the picker to always open that site in the chosen target.")
+                }
+            }
+            HStack {
+                Button("Add Rule") {
+                    guard let first = model.config.targets.first else { return }
+                    model.config.rules.append(Rule(title: "New rule", matchers: [.hostSuffix("")], target: first.id))
+                }
+                .disabled(model.config.targets.isEmpty)
+                if model.config.targets.isEmpty {
+                    Text("A rule needs a target; none have been found.").foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+struct RuleRow: View {
+    @Binding var rule: Rule
+    let targets: [Target]
+    let delete: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Toggle("Enabled", isOn: $rule.isEnabled).toggleStyle(.checkbox)
+                TextField("Title", text: $rule.title).font(.headline)
+                Button(role: .destructive, action: delete) { Label("Delete Rule", systemImage: "trash") }
+            }
+            if rule.matchers.isEmpty {
+                Text(rule.sourceApp == nil ? "No conditions: matches every link." : "No conditions: matches every link from this app.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(Array(rule.matchers.indices), id: \.self) { index in
+                HStack {
+                    Picker("Condition", selection: kind(index)) {
+                        ForEach(Matcher.Kind.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .labelsHidden().frame(width: 170)
+                    TextField("Value", text: value(index))
+                    Button { if rule.matchers.indices.contains(index) { rule.matchers.remove(at: index) } } label: {
+                        Label("Remove Condition", systemImage: "minus.circle")
+                    }
+                }
+            }
+            HStack {
+                Button { rule.matchers.append(.hostSuffix("")) } label: { Label("Add Condition", systemImage: "plus.circle") }
+                Spacer()
+                Text("From app")
+                TextField("Any app (bundle id)", text: sourceApp).frame(width: 220)
+                Menu("Running Apps") {
+                    Button("Any App") { rule.sourceApp = nil }
+                    Divider()
+                    ForEach(RunningApp.all(), id: \.bundleID) { app in
+                        Button(app.name) { rule.sourceApp = app.bundleID }
+                    }
+                }
+                .fixedSize()
+            }
+            Picker("Opens in", selection: $rule.target) {
+                ForEach(targets) { Text($0.name).tag($0.id) }
+                if !targets.contains(where: { $0.id == rule.target }) {
+                    Text("Missing target (\(rule.target))").tag(rule.target)
+                }
+            }
+            .frame(maxWidth: 360)
+        }
+        .padding(.vertical, 6)
+    }
+
+    private func kind(_ index: Int) -> Binding<Matcher.Kind> {
+        Binding(
+            get: { rule.matchers.indices.contains(index) ? rule.matchers[index].kind : .hostSuffix },
+            set: { kind in
+                guard rule.matchers.indices.contains(index) else { return }
+                rule.matchers[index] = Matcher(kind: kind, value: rule.matchers[index].value)
+            })
+    }
+
+    private func value(_ index: Int) -> Binding<String> {
+        Binding(
+            get: { rule.matchers.indices.contains(index) ? rule.matchers[index].value : "" },
+            set: { value in
+                guard rule.matchers.indices.contains(index) else { return }
+                rule.matchers[index] = Matcher(kind: rule.matchers[index].kind, value: value)
+            })
+    }
+
+    private var sourceApp: Binding<String> {
+        Binding(
+            get: { rule.sourceApp ?? "" },
+            set: { rule.sourceApp = $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 })
+    }
+}
+
+/// A running app with a bundle id and a Dock presence — the apps links come from.
+struct RunningApp {
+    let name: String
+    let bundleID: String
+
+    @MainActor static func all() -> [RunningApp] {
+        var seen = Set<String>()
+        return NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular }
+            .compactMap { app -> RunningApp? in
+                guard let id = app.bundleIdentifier, seen.insert(id).inserted else { return nil }
+                return RunningApp(name: app.localizedName ?? id, bundleID: id)
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+// MARK: - Documents
+
+struct DocumentsTab: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Google files you picked a target for open there again without the picker.")
+                .foregroundStyle(.secondary)
+            List {
+                ForEach(model.config.rememberedDocuments.keys.sorted(), id: \.self) { fileID in
+                    HStack {
+                        Text(fileID).font(.body.monospaced()).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                        Spacer()
+                        let target = model.config.rememberedDocuments[fileID] ?? ""
+                        Text(model.target(target)?.name ?? "Missing target (\(target))")
+                        Button(role: .destructive) { model.config.rememberedDocuments[fileID] = nil } label: {
+                            Label("Forget", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .overlay {
+                if model.config.rememberedDocuments.isEmpty {
+                    EmptyNote(text: "No remembered documents. Picking a target for a Google Docs, Sheets, Slides or Drive link adds it here.")
+                }
+            }
+            HStack {
+                Spacer()
+                if model.config.rememberedDocuments.isEmpty {
+                    Text("Nothing to clear.").foregroundStyle(.secondary)
+                }
+                Button("Clear All", role: .destructive) { model.config.rememberedDocuments.removeAll() }
+                    .disabled(model.config.rememberedDocuments.isEmpty)
+            }
+        }
+    }
+}
+
+// MARK: - General
+
+struct GeneralTab: View {
+    let model: AppModel
+    @State private var current = DefaultBrowser.current
+    @State private var failure: String?
+
+    var body: some View {
+        Form {
+            Section("Default browser") {
+                LabeledContent("Current default browser", value: DefaultBrowser.name(of: current))
+                HStack {
+                    Button("Make Manicule the Default Browser") {
+                        failure = nil
+                        DefaultBrowser.makeManicule { error in
+                            failure = error?.localizedDescription
+                            current = DefaultBrowser.current
+                        }
+                    }
+                    .disabled(DefaultBrowser.isManicule(current))
+                    if DefaultBrowser.isManicule(current) {
+                        Text("Manicule is the default browser").foregroundStyle(.secondary)
+                    }
+                }
+                if let failure { Text(failure).foregroundStyle(.red) }
+            }
+            Section("Browser access") {
+                if model.unreadable.isEmpty {
+                    Text("Manicule can read all your browsers' profiles.")
+                } else {
+                    ForEach(model.unreadable, id: \.browser) { root in
+                        HStack {
+                            Text("\(root.browser.displayName) can't be read yet")
+                            Spacer()
+                            Button("Grant Access…") { BrowserAccess.grant(root, model: model) }
+                        }
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            current = DefaultBrowser.current
+        }
+        .onAppear { current = DefaultBrowser.current }
+    }
+}
+
+/// macOS lets Manicule read a browser's profile file only after the user picks that exact folder
+/// in an open panel (the folder's `com.apple.macl` list); the parent folder doesn't count.
+@MainActor
+enum BrowserAccess {
+    static func panel(for root: BrowserRoot) -> NSOpenPanel {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = root.folder
+        panel.message = "Click Open to let Manicule read your \(root.browser.displayName) profiles."
+        panel.prompt = "Open"
+        return panel
+    }
+
+    static func grant(_ root: BrowserRoot, model: AppModel) {
+        if panel(for: root).runModal() == .OK { model.reload() }
+    }
+}

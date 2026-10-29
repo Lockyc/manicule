@@ -12,8 +12,8 @@ instead of rules having to be written up front. The name is the printer's pointi
 
 ## Status
 
-In development: links route and the icon-strip picker works; the menu-bar menu, Settings and
-the per-profile web-app launchers are not built yet.
+In development: links route, the icon-strip picker, the ☞ menu-bar menu and Settings work; the
+per-profile web-app launchers are not built yet.
 
 ## Build & test
 
