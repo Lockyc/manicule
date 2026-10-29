@@ -12,8 +12,8 @@ instead of rules having to be written up front. The name is the printer's pointi
 
 ## Status
 
-Early scaffold: the app builds and registers as an http/https handler, but routing and the
-picker are not built yet.
+In development: links route and the icon-strip picker works; the menu-bar menu, Settings and
+the per-profile web-app launchers are not built yet.
 
 ## Build & test
 
