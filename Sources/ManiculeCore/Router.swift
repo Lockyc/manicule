@@ -10,6 +10,11 @@ public struct IncomingLink: Equatable, Sendable {
         self.sourceApp = sourceApp
         self.receivedAt = receivedAt
     }
+
+    /// Web links and local files (HTML documents opened with Manicule as the default browser).
+    public static func isHandled(_ url: URL) -> Bool {
+        ["http", "https", "file"].contains(url.scheme?.lowercased() ?? "")
+    }
 }
 
 public struct RouterState: Sendable {

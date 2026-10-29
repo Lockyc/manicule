@@ -98,6 +98,15 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(s.pickerTargets, [def, saf])
     }
 
+    func testHandledSchemesAreWebAndFile() {
+        for s in ["http://example.com", "HTTPS://example.com", "file:///tmp/a.html"] {
+            XCTAssertTrue(IncomingLink.isHandled(URL(string: s)!), s)
+        }
+        for s in ["mailto:a@example.com", "ftp://example.com/x", "x-manicule:y"] {
+            XCTAssertFalse(IncomingLink.isHandled(URL(string: s)!), s)
+        }
+    }
+
     func testHostlessURLGoesToPicker() {
         for s in ["file:///tmp/a.html", "http://localhost:55801/?key=k"] {
             let r = Rule(title: "a", matchers: [.hostSuffix("example.com")], target: ff.id)

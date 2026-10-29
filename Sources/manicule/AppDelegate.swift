@@ -41,11 +41,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
-        guard let string = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
-              let url = URL(string: string), let scheme = url.scheme?.lowercased(),
-              scheme == "http" || scheme == "https" else { return }
+        let string = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue ?? ""
+        guard let url = URL(string: string) else {
+            Self.log.error("ignored a link that isn't a URL: \(string, privacy: .private)")
+            return
+        }
+        accept(url, from: event)
+    }
+
+    /// HTML files opened with Manicule (it is listed as their viewer as the default browser).
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        for url in urls { accept(url, from: event) }
+    }
+
+    private func accept(_ url: URL, from event: NSAppleEventDescriptor?) {
+        guard IncomingLink.isHandled(url) else {
+            Self.log.error("ignored a \(url.scheme ?? "scheme-less", privacy: .public) link: \(url.absoluteString, privacy: .private)")
+            return
+        }
         var source: String?
-        if let pid = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value {
+        if let pid = event?.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value {
             source = NSRunningApplication(processIdentifier: pid_t(pid))?.bundleIdentifier
         }
         receive(IncomingLink(url: url, sourceApp: source, receivedAt: Date()))

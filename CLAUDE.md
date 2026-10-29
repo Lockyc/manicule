@@ -10,8 +10,9 @@ links:
 ---
 # Manicule
 
-A native macOS (14+) menu-bar app that is the system default browser: every http/https link
-goes through it and it alone decides where the link opens. Targets are browser **profiles**
+A native macOS (14+) menu-bar app that is the system default browser: every http, https and
+file (HTML document) link goes through it and it alone decides where the link opens; a `file`
+URL has no host, so it always reaches the picker. Other schemes are logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
 not just browsers. One Swift package, no Xcode project, no third-party dependencies.
 
