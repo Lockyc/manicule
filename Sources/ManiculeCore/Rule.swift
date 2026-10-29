@@ -101,6 +101,17 @@ public struct Rule: Codable, Hashable, Identifiable, Sendable {
         self.isEnabled = isEnabled
     }
 
+    /// `id` and `target` are required; any other missing key takes its default.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try c.decode(UUID.self, forKey: .id),
+                  title: try c.decodeIfPresent(String.self, forKey: .title) ?? "",
+                  matchers: try c.decodeIfPresent([Matcher].self, forKey: .matchers) ?? [],
+                  sourceApp: try c.decodeIfPresent(String.self, forKey: .sourceApp),
+                  target: try c.decode(String.self, forKey: .target),
+                  isEnabled: try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true)
+    }
+
     /// Enabled, at least one matcher, source app (when set) equal, and every matcher holds. A rule
     /// with no matchers never matches: emptying one while editing must not open every link silently.
     public func matches(url: URL, sourceApp: String?) -> Bool {

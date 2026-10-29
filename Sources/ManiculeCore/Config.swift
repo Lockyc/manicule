@@ -36,6 +36,19 @@ public struct Config: Codable, Equatable, Sendable {
         self.history = history
     }
 
+    /// Tolerates a config from another version: a missing key takes its default (`visible`
+    /// defaults to every target), an unknown key is ignored.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let targets = try c.decodeIfPresent([Target].self, forKey: .targets) ?? []
+        self.init(targets: targets,
+                  visible: try c.decodeIfPresent([Target.ID].self, forKey: .visible) ?? targets.map(\.id),
+                  rules: try c.decodeIfPresent([Rule].self, forKey: .rules) ?? [],
+                  rememberedDocuments: try c.decodeIfPresent([String: Target.ID].self, forKey: .rememberedDocuments) ?? [:],
+                  lastChoiceByHost: try c.decodeIfPresent([String: Target.ID].self, forKey: .lastChoiceByHost) ?? [:],
+                  history: try c.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? [])
+    }
+
     public func routerState(available: Set<Target.ID>) -> RouterState {
         RouterState(targets: targets, visible: visible, rules: rules,
                     rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,

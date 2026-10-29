@@ -134,6 +134,40 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(store.load(discovered: discovered), c)
     }
 
+    /// A config written by another version: keys missing (defaults fill them) and keys unknown (ignored).
+    func testConfigWithMissingAndUnknownKeysDecodes() throws {
+        let rule = "6F1C2A4E-0B8D-4C59-9E43-2D1B7A5F0C11"
+        let json = """
+        {"targets":[{"id":"chrome|Default","browser":"chrome","profile":"Default","name":"Chrome · Work","colour":"red"},
+                    {"id":"safari|","browser":"safari"}],
+         "visible":["chrome|Default"],
+         "rules":[{"id":"\(rule)","title":"r","matchers":[{"hostSuffix":{"_0":"example.test"}}],"target":"safari|"}],
+         "lastChoiceByHost":{"example.test":"safari|"},
+         "somethingNew":42}
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let c = try decoder.decode(Config.self, from: Data(json.utf8))
+        XCTAssertEqual(c.targets, [
+            Target(id: "chrome|Default", browser: .chrome, profile: "Default", name: "Chrome · Work", email: nil),
+            Target(id: "safari|", browser: .safari, profile: nil, name: "Safari", email: nil),
+        ])
+        XCTAssertEqual(c.visible, ["chrome|Default"])
+        XCTAssertEqual(c.rules, [Rule(id: UUID(uuidString: rule)!, title: "r", matchers: [.hostSuffix("example.test")],
+                                      sourceApp: nil, target: "safari|", isEnabled: true)])
+        XCTAssertEqual(c.rememberedDocuments, [:])
+        XCTAssertEqual(c.lastChoiceByHost, ["example.test": "safari|"])
+        XCTAssertEqual(c.history, [])
+    }
+
+    func testHistoryEntryWithoutSourceOrTargetDecodes() throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let e = try decoder.decode(HistoryEntry.self, from: Data(#"{"url":"https://example.test/","at":"2026-01-01T00:00:00Z"}"#.utf8))
+        XCTAssertEqual(e, HistoryEntry(url: URL(string: "https://example.test/")!, sourceApp: nil, target: nil,
+                                       at: Date(timeIntervalSince1970: 1_767_225_600)))
+    }
+
     func testMissingFileGivesDefaults() {
         XCTAssertEqual(ConfigStore(directory: dir).load(discovered: discovered), Config.defaults(from: discovered))
     }

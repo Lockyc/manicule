@@ -37,6 +37,16 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         self.email = email
     }
 
+    /// `id` and `browser` are required; a missing name is the browser's.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let browser = try c.decode(Browser.self, forKey: .browser)
+        self.init(id: try c.decode(String.self, forKey: .id), browser: browser,
+                  profile: try c.decodeIfPresent(String.self, forKey: .profile),
+                  name: try c.decodeIfPresent(String.self, forKey: .name) ?? browser.displayName,
+                  email: try c.decodeIfPresent(String.self, forKey: .email))
+    }
+
     /// Joins a browser to a profile name in default target names ("Chrome · Work").
     public static let nameSeparator = " · "
 
