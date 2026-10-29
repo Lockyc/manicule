@@ -13,6 +13,13 @@ enum ProfileIcon {
         return image
     }
 
+    /// Loads the pictures ahead of the first picker, so its strip appears without file reads.
+    static func prewarm(_ targets: [Target]) {
+        for target in targets { _ = image(for: target) }
+    }
+
+    static func isCached(_ id: Target.ID) -> Bool { cache[id] != nil }
+
     private static func load(_ target: Target, home: URL) -> NSImage {
         switch target.browser {
         case .chrome, .chromium:

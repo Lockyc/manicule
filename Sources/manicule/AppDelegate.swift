@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 receive(IncomingLink(url: entry.url, sourceApp: entry.sourceApp, receivedAt: Date()))
             },
             showSettings: { [unowned self] in showSettings() })
+        // After launch completes, so the pictures' file reads don't hold it up.
+        DispatchQueue.main.async { [unowned self] in ProfileIcon.prewarm(model.routerState.pickerTargets) }
     }
 
     func showSettings() {

@@ -141,4 +141,12 @@ final class ProfileIconTests: XCTestCase {
         XCTAssertEqual(Set(hues).count, hues.count)
         XCTAssertEqual(ProfileIcon.hue("chrome|Default"), ProfileIcon.hue("chrome|Default"))
     }
+
+    func testPrewarmFillsTheCache() {
+        let target = Target(id: "chromium|Prewarm \(UUID().uuidString)", browser: .chromium, profile: "Nope",
+                            name: "Chromium · Prewarm", email: nil)
+        XCTAssertFalse(ProfileIcon.isCached(target.id))
+        ProfileIcon.prewarm([target])
+        XCTAssertTrue(ProfileIcon.isCached(target.id))
+    }
 }
