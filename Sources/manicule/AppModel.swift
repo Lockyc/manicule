@@ -10,9 +10,11 @@ final class AppModel {
     @ObservationIgnored private static let log = Logger(subsystem: "com.lockyc.manicule", category: "config")
     @ObservationIgnored private let store: ConfigStore
     @ObservationIgnored private let home: URL
+    @ObservationIgnored private let launchers: LauncherWriter
+    @ObservationIgnored private var writtenLaunchers: [LauncherSpec]?
 
     var config = Config(targets: [], visible: []) {
-        didSet { if config != oldValue { save() } }
+        didSet { if config != oldValue { save(); refreshLaunchers() } }
     }
     /// The latest discovery; carries each profile's installed web apps, which the config doesn't store.
     private(set) var discovered: [DiscoveredProfile] = []
@@ -22,6 +24,7 @@ final class AppModel {
     init(store: ConfigStore, home: URL = FileManager.default.homeDirectoryForCurrentUser) {
         self.store = store
         self.home = home
+        self.launchers = LauncherWriter(home: home)
         reload()
     }
 
@@ -34,6 +37,7 @@ final class AppModel {
         var loaded = store.load(discovered: discovered)
         loaded.merge(discovered: discovered)
         config = loaded
+        refreshLaunchers()
     }
 
     func target(_ id: Target.ID) -> Target? {
@@ -44,5 +48,16 @@ final class AppModel {
         do { try store.save(config) } catch {
             Self.log.error("config save failed: \(error.localizedDescription, privacy: .public)")
         }
+    }
+}
+
+extension AppModel {
+    /// Rewrites the per-profile web-app launchers when the set they derive from has changed.
+    private func refreshLaunchers() {
+        let shown = Set(config.visible)
+        let specs = LauncherSpecs.make(visible: config.targets.filter { shown.contains($0.id) }, profiles: discovered)
+        guard specs != writtenLaunchers else { return }
+        writtenLaunchers = specs
+        launchers.write(specs)
     }
 }
