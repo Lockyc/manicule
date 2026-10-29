@@ -26,6 +26,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         panel = KeyPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                          backing: .buffered, defer: true)
         super.init()
+        panel.delegate = self
         panel.level = .popUpMenu
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.isFloatingPanel = true
@@ -153,6 +154,9 @@ final class PickerPanel: NSObject, @MainActor Picking {
         model = nil
         if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
         clickMonitor = nil
+        // A window being ordered out doesn't reliably get mouseExited, and tiles are reused.
+        tiles.forEach { $0.clearHover() }
+        copyButton.clearHover()
         panel.orderOut(nil)
         completion(action)
     }
@@ -164,6 +168,14 @@ final class PickerPanel: NSObject, @MainActor Picking {
             .replacingOccurrences(of: ".app", with: "", options: [.anchored, .backwards])
         sourceNames[bundleID] = name
         return name
+    }
+}
+
+extension PickerPanel: NSWindowDelegate {
+    /// Losing key without a click (⌘-Tab, Mission Control) would leave the panel deaf to keys
+    /// and the link queue stalled, so it cancels like a click outside.
+    func windowDidResignKey(_ notification: Notification) {
+        finish(.cancel)
     }
 }
 
@@ -221,6 +233,7 @@ final class TileView: NSView {
 
     override func mouseEntered(with event: NSEvent) { isHovered = true }
     override func mouseExited(with event: NSEvent) { isHovered = false }
+    func clearHover() { isHovered = false }
 
     @MainActor
     init(target: Target, number: Int?) {
@@ -310,6 +323,7 @@ final class HoverButton: NSButton {
 
     override func mouseEntered(with event: NSEvent) { isHovered = true }
     override func mouseExited(with event: NSEvent) { isHovered = false }
+    func clearHover() { isHovered = false }
 
     override func draw(_ dirtyRect: NSRect) {
         NSColor.labelColor.withAlphaComponent(isHovered ? 0.16 : 0.07).setFill()

@@ -85,6 +85,32 @@ final class PickerPanelTests: XCTestCase {
         picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
     }
 
+    func testHoverDoesNotSurviveIntoTheNextShow() throws {
+        let picker = PickerPanel()
+        let first = show(picker)
+        let mouse = try XCTUnwrap(NSEvent.mouseEvent(with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0,
+                                                     windowNumber: 0, context: nil, eventNumber: 0, clickCount: 0, pressure: 0))
+        let tile = try XCTUnwrap(picker.tiles.first)
+        tile.mouseEntered(with: mouse)
+        picker.copyButton.mouseEntered(with: mouse)
+        tile.mouseDown(with: mouse)
+        XCTAssertEqual(first(), [.open("first", always: false)])
+
+        _ = show(picker)
+        XCTAssertTrue(picker.tiles.first === tile, "same targets reuse the tiles")
+        XCTAssertFalse(tile.isHovered)
+        XCTAssertFalse(picker.copyButton.isHovered)
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
+    func testResigningKeyCancels() {
+        let picker = PickerPanel()
+        let actions = show(picker)
+        picker.windowDidResignKey(Notification(name: NSWindow.didResignKeyNotification, object: picker.panel))
+        XCTAssertEqual(actions(), [.cancel])
+        XCTAssertFalse(picker.panel.isVisible)
+    }
+
     func testFrameStaysOnScreen() throws {
         let screen = try XCTUnwrap(NSScreen.main)
         let corner = NSPoint(x: screen.visibleFrame.maxX - 1, y: screen.visibleFrame.minY + 1)
