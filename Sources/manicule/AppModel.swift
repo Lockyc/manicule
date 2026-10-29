@@ -25,15 +25,15 @@ final class AppModel {
         reload()
     }
 
-    /// Re-reads installed browser profiles and the saved config, merges profiles found since, and
-    /// saves. Run at launch, when Settings opens, and after a folder-access grant.
+    /// Re-reads installed browser profiles and the saved config and merges profiles found since
+    /// (`config`'s didSet saves the result). Run at launch, when Settings opens, and after a
+    /// folder-access grant.
     func reload() {
         discovered = ProfileDiscovery.discoverAll(home: home)
         unreadable = ProfileDiscovery.unreadableRoots(home: home)
         var loaded = store.load(discovered: discovered)
         loaded.merge(discovered: discovered)
         config = loaded
-        save()
     }
 
     func target(_ id: Target.ID) -> Target? {
