@@ -273,9 +273,21 @@ struct GeneralTab: View {
     let model: AppModel
     @State private var current = DefaultBrowser.current
     @State private var failure: String?
+    @State private var importNote: String?
 
     var body: some View {
         Form {
+            Section("Import") {
+                HStack {
+                    Button("Import rules from Velja") { importNote = model.importVeljaRules() }
+                        .disabled(!AppModel.veljaInstalled)
+                    if !AppModel.veljaInstalled {
+                        Text("Velja isn't installed").foregroundStyle(.secondary)
+                    } else if let importNote {
+                        Text(importNote).foregroundStyle(.secondary)
+                    }
+                }
+            }
             Section("Default browser") {
                 LabeledContent("Current default browser", value: DefaultBrowser.name(of: current))
                 HStack {

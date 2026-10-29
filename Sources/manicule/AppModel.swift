@@ -44,6 +44,22 @@ final class AppModel {
         config.targets.first { $0.id == id }
     }
 
+    static let veljaPreferences = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Containers/com.sindresorhus.Velja/Data/Library/Preferences/com.sindresorhus.Velja.plist")
+
+    static var veljaInstalled: Bool { FileManager.default.fileExists(atPath: veljaPreferences.path) }
+
+    /// Appends Velja's mappable rules and returns the line to show the user.
+    func importVeljaRules() -> String {
+        guard let data = try? Data(contentsOf: Self.veljaPreferences) else { return "Velja's preferences can't be read" }
+        let result = VeljaImport.result(fromPreferences: data, targets: config.targets, existing: config.rules)
+        config.rules.append(contentsOf: result.rules)
+        var parts: [String] = []
+        if !result.rules.isEmpty { parts.append("Imported \(result.rules.count) rule\(result.rules.count == 1 ? "" : "s")") }
+        if result.skipped > 0 { parts.append("Skipped \(result.skipped) that Manicule can't map") }
+        return parts.isEmpty ? "No rules to import" : parts.joined(separator: ". ")
+    }
+
     private func save() {
         do { try store.save(config) } catch {
             Self.log.error("config save failed: \(error.localizedDescription, privacy: .public)")
