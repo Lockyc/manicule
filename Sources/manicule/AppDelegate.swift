@@ -21,10 +21,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reload()
     }
 
-    /// Re-reads installed browser profiles and the saved config. Also run when Settings opens.
+    /// Re-reads installed browser profiles and the saved config, merges profiles found since, and
+    /// saves. Also run when Settings opens.
     func reload() {
         discovered = ProfileDiscovery.discoverAll(home: FileManager.default.homeDirectoryForCurrentUser)
         config = store.load(discovered: discovered)
+        config.merge(discovered: discovered)
+        persist()
     }
 
     private var statusItem: StatusItemController?
