@@ -86,13 +86,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func finish(_ link: IncomingLink, _ action: PickerAction) {
         switch action {
         case .open(let id, let always):
-            model.config.recordPick(link, target: id, always: always)
-            model.config.recordOutcome(link, target: id)
+            // Launch first: recording saves the config, which the link shouldn't wait on.
             if let target = model.target(id) {
                 open(link, in: target)
             } else {
                 Self.log.error("picked target \(id, privacy: .public) is not in the config")
             }
+            model.config.recordPick(link, target: id, always: always)
+            model.config.recordOutcome(link, target: id)
         case .copy(let url):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(url.absoluteString, forType: .string)
