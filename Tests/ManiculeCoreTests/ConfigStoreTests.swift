@@ -19,6 +19,8 @@ final class ConfigStoreTests: XCTestCase {
         DiscoveredProfile(browser: .safari, directory: "", name: "Safari", email: nil, installedWebApps: []),
     ]
 
+    private let doc = "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
+
     private func link(_ s: String) -> IncomingLink {
         IncomingLink(url: URL(string: s)!, sourceApp: nil, receivedAt: Date(timeIntervalSince1970: 0))
     }
@@ -42,9 +44,9 @@ final class ConfigStoreTests: XCTestCase {
 
     func testRecordPickSetsLastChoiceAndRemembersDocument() {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://Docs.Google.com/document/d/abc123/edit"), target: "chrome|Default", always: false)
+        c.recordPick(link("https://Docs.Google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: false)
         XCTAssertEqual(c.lastChoiceByHost["docs.google.com"], "chrome|Default")
-        XCTAssertEqual(c.rememberedDocuments["abc123"], "chrome|Default")
+        XCTAssertEqual(c.rememberedDocuments[doc], "chrome|Default")
         XCTAssertTrue(c.rules.isEmpty)
     }
 
@@ -112,7 +114,7 @@ final class ConfigStoreTests: XCTestCase {
 
     func testRoundTrip() throws {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://docs.google.com/document/d/abc/edit"), target: "chrome|Default", always: true)
+        c.recordPick(link("https://docs.google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: true)
         c.recordOutcome(link("https://example.test/"), target: "safari|")
         let store = ConfigStore(directory: dir)
         try store.save(c)

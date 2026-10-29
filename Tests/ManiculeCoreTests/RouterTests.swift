@@ -6,6 +6,7 @@ final class RouterTests: XCTestCase {
     let p3 = Target(id: "chrome|Profile 3", browser: .chrome, profile: "Profile 3", name: "Home", email: "h@example.com")
     let ff = Target(id: "firefox|", browser: .firefox, profile: nil, name: "Firefox", email: nil)
     let saf = Target(id: "safari|", browser: .safari, profile: nil, name: "Safari", email: nil)
+    let doc = "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
 
     func state(rules: [Rule] = [], remembered: [String: String] = [:], last: [String: String] = [:],
                visible: [String]? = nil) -> RouterState {
@@ -20,13 +21,13 @@ final class RouterTests: XCTestCase {
 
     func testEmailRoutesToMatchingChromeProfile() {
         let rule = Rule(title: "g", matchers: [.hostSuffix("google.com")], target: ff.id)
-        let d = Router.decide(link("https://docs.google.com/document/d/X/edit?authuser=h%40example.com"),
+        let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit?authuser=h%40example.com"),
                               state: state(rules: [rule]))
         XCTAssertEqual(d, .open(p3, .accountEmail))
     }
 
     func testEmailForUnknownAccountFallsThrough() {
-        let d = Router.decide(link("https://docs.google.com/document/d/X/edit?authuser=z%40example.com"), state: state())
+        let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit?authuser=z%40example.com"), state: state())
         XCTAssertEqual(d, .pick(preselected: def.id))
     }
 
@@ -39,14 +40,14 @@ final class RouterTests: XCTestCase {
 
     func testRuleBeatsRememberedDocument() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: saf.id)
-        let d = Router.decide(link("https://docs.google.com/document/d/X/edit"),
-                              state: state(rules: [r], remembered: ["X": def.id]))
+        let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
+                              state: state(rules: [r], remembered: [doc:def.id]))
         XCTAssertEqual(d, .open(saf, .rule(r.id)))
     }
 
     func testRememberedDocumentOpens() {
-        let d = Router.decide(link("https://docs.google.com/document/d/X/edit"),
-                              state: state(remembered: ["X": def.id]))
+        let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
+                              state: state(remembered: [doc:def.id]))
         XCTAssertEqual(d, .open(def, .rememberedDocument))
     }
 
@@ -68,8 +69,8 @@ final class RouterTests: XCTestCase {
 
     func testDanglingTargetsFallThroughToPicker() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: "chrome|Gone")
-        let d = Router.decide(link("https://docs.google.com/document/d/X/edit"),
-                              state: state(rules: [r], remembered: ["X": "chrome|Gone"],
+        let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
+                              state: state(rules: [r], remembered: [doc:"chrome|Gone"],
                                            last: ["docs.google.com": "chrome|Gone"]))
         XCTAssertEqual(d, .pick(preselected: def.id))
     }
