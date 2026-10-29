@@ -13,34 +13,51 @@ public enum ProfileDiscovery {
         }
     }
 
+    /// Profiles in file order. The default is the profile an `[Install…]` section's `Default=`
+    /// names (Firefox's current default); a profile's own `Default=1` counts only when the file
+    /// has no install section.
     public static func firefox(profilesINI: String) -> [DiscoveredProfile] {
         var result: [DiscoveredProfile] = []
-        var inProfile = false
+        var legacyDefault: String?
+        var installDefault: String?
+        var section = ""
         var name: String?
         var path: String?
+        var isDefault = false
         func flush() {
-            if inProfile, let name, let path {
+            if section.hasPrefix("[Profile"), let name, let path {
                 result.append(DiscoveredProfile(browser: .firefox, directory: path, name: name,
                                                 email: nil, installedWebApps: []))
+                if isDefault { legacyDefault = path }
             }
             name = nil
             path = nil
+            isDefault = false
         }
         for raw in profilesINI.split(whereSeparator: \.isNewline) {
             let line = raw.trimmingCharacters(in: .whitespaces)
             if line.hasPrefix("[") {
                 flush()
-                inProfile = line.hasPrefix("[Profile")
+                section = line
             } else if let eq = line.firstIndex(of: "=") {
+                let key = line[..<eq]
                 let value = String(line[line.index(after: eq)...])
-                switch line[..<eq] {
+                if section.hasPrefix("[Install") {
+                    if key == "Default", installDefault == nil { installDefault = value }
+                    continue
+                }
+                switch key {
                 case "Name": name = value
                 case "Path": path = value
+                case "Default": isDefault = value == "1"
                 default: break
                 }
             }
         }
         flush()
+        if let chosen = installDefault ?? legacyDefault {
+            for i in result.indices where result[i].directory == chosen { result[i].isDefault = true }
+        }
         return result
     }
 

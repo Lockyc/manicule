@@ -54,12 +54,19 @@ public struct DiscoveredProfile: Equatable, Sendable {
     public var name: String
     public var email: String?
     public var installedWebApps: Set<String>
+    /// The browser's own default profile (Firefox's install default).
+    public var isDefault: Bool
 
-    public init(browser: Browser, directory: String, name: String, email: String?, installedWebApps: Set<String>) {
+    public init(browser: Browser, directory: String, name: String, email: String?, installedWebApps: Set<String>,
+                isDefault: Bool = false) {
         self.browser = browser
         self.directory = directory
         self.name = name
         self.email = email
         self.installedWebApps = installedWebApps
+        self.isDefault = isDefault
     }
+
+    /// The id of the target this profile becomes.
+    public var targetID: Target.ID { "\(browser.rawValue)|\(directory)" }
 }

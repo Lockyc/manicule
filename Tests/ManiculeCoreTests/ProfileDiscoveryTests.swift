@@ -46,6 +46,39 @@ final class ProfileDiscoveryTests: XCTestCase {
         XCTAssertEqual(found[0].browser, .firefox)
         XCTAssertEqual(found[0].directory, "Profiles/x.default-release")
         XCTAssertEqual(found[0].name, "default-release")
+        XCTAssertFalse(found[0].isDefault)
+    }
+
+    /// Firefox's own default is the profile its install section names; the legacy
+    /// `Default=1` marks an older profile and loses to it.
+    func testFirefoxDefaultIsTheInstallSectionsProfile() {
+        let ini = """
+        [Install4F96D1932A9F858E]
+        Default=Profiles/b.default-release
+        Locked=1
+
+        [Profile1]
+        Name=default
+        IsRelative=1
+        Path=Profiles/a.default
+        Default=1
+
+        [Profile0]
+        Name=default-release
+        IsRelative=1
+        Path=Profiles/b.default-release
+
+        [General]
+        StartWithLastProfile=1
+        """
+        let found = ProfileDiscovery.firefox(profilesINI: ini)
+        XCTAssertEqual(found.map(\.directory), ["Profiles/a.default", "Profiles/b.default-release"])
+        XCTAssertEqual(found.map(\.isDefault), [false, true])
+    }
+
+    func testFirefoxDefaultFallsBackToDefaultOneWithoutAnInstallSection() {
+        let ini = "[Profile0]\nName=a\nPath=Profiles/a\n\n[Profile1]\nName=b\nPath=Profiles/b\nDefault=1\n"
+        XCTAssertEqual(ProfileDiscovery.firefox(profilesINI: ini).map(\.isDefault), [false, true])
     }
 
     func testDiscoverAllSkipsMissingBrowsers() throws {

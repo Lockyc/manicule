@@ -59,7 +59,8 @@ final class AppModel {
     /// Appends Velja's mappable rules and returns the line to show the user.
     func importVeljaRules() -> String {
         guard let data = try? Data(contentsOf: Self.veljaPreferences) else { return "Velja's preferences can't be read" }
-        let result = VeljaImport.result(fromPreferences: data, targets: config.targets, existing: config.rules)
+        let result = VeljaImport.result(fromPreferences: data, targets: config.targets, existing: config.rules,
+                                        defaultTargets: Set(discovered.filter(\.isDefault).map(\.targetID)))
         config.rules.append(contentsOf: result.rules)
         var parts: [String] = []
         if !result.rules.isEmpty { parts.append("Imported \(result.rules.count) rule\(result.rules.count == 1 ? "" : "s")") }

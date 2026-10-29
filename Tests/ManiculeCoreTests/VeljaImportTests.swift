@@ -50,6 +50,16 @@ final class VeljaImportTests: XCTestCase {
         XCTAssertTrue(VeljaImport.rules(fromPreferences: plist([chromeNoProfile, unknownProfile, notInstalled]), targets: targets).isEmpty)
     }
 
+    func testProfileLessFirefoxMapsToFirefoxsDefaultProfile() {
+        let other = Target(id: "firefox|ff.other", browser: .firefox, profile: "ff.other", name: "Firefox · other", email: nil)
+        let twoFirefox = targets + [other]
+        XCTAssertTrue(VeljaImport.rules(fromPreferences: plist([json()]), targets: twoFirefox).isEmpty,
+                      "no default known: ambiguous")
+        let res = VeljaImport.result(fromPreferences: plist([json()]), targets: twoFirefox, existing: [],
+                                     defaultTargets: [other.id])
+        XCTAssertEqual(res.rules.map(\.target), [other.id])
+    }
+
     func testDisabledAreSkippedAndSourceAppsHandled() {
         let rules = [json(enabled: false), json(sources: #"["com.apple.mail"]"#), json(sources: #"["a","b"]"#)]
         let r = VeljaImport.rules(fromPreferences: plist(rules), targets: targets)

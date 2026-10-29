@@ -45,7 +45,7 @@ public struct Config: Codable, Equatable, Sendable {
     /// Targets that can open on this Mac: found by this discovery, or in a browser whose profile
     /// file can't be read yet (unknown, so not penalised).
     public func available(discovered: [DiscoveredProfile], unreadable: [Browser]) -> Set<Target.ID> {
-        let found = Set(Config.defaults(from: discovered).targets.map(\.id))
+        let found = Set(discovered.map(\.targetID))
         return Set(targets.filter { found.contains($0.id) || unreadable.contains($0.browser) }.map(\.id))
     }
 }
@@ -63,7 +63,7 @@ extension Config {
             case .firefox: name = firefoxCount > 1 ? "\(browser)\(separator)\(p.name)" : browser
             case .safari: name = browser
             }
-            return Target(id: "\(p.browser.rawValue)|\(p.directory)", browser: p.browser,
+            return Target(id: p.targetID, browser: p.browser,
                           profile: p.directory.isEmpty ? nil : p.directory, name: name, email: p.email)
         }
         return Config(targets: targets, visible: targets.map(\.id))
