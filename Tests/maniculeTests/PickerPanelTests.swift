@@ -65,3 +65,13 @@ final class PickerPanelTests: XCTestCase {
         XCTAssertTrue(screen.visibleFrame.contains(frame))
     }
 }
+
+@MainActor
+final class ProfileIconTests: XCTestCase {
+    func testNeighbouringProfileIdsSpreadAcrossTheWheel() {
+        let hues = (1...6).map { ProfileIcon.hue("chromium|Profile \($0)") }
+        XCTAssertGreaterThan(hues.max()! - hues.min()!, 0.5, "ids differing in one character must not cluster")
+        XCTAssertEqual(Set(hues).count, hues.count)
+        XCTAssertEqual(ProfileIcon.hue("chrome|Default"), ProfileIcon.hue("chrome|Default"))
+    }
+}

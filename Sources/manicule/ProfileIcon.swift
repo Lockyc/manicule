@@ -63,10 +63,17 @@ enum ProfileIcon {
         }
     }
 
-    /// FNV-1a over the id: `hashValue` is seeded per process, so it would change the colour each launch.
+    /// FNV-1a over the id, then murmur3's finaliser: `hashValue` is seeded per process (the colour
+    /// would change each launch), and plain FNV's low bits barely move for ids that differ only in
+    /// their last character ("Profile 2", "Profile 3"), which would give neighbours the same hue.
     static func hue(_ id: String) -> CGFloat {
         var hash: UInt32 = 2_166_136_261
         for byte in id.utf8 { hash = (hash ^ UInt32(byte)) &* 16_777_619 }
+        hash ^= hash >> 16
+        hash = hash &* 0x85EB_CA6B
+        hash ^= hash >> 13
+        hash = hash &* 0xC2B2_AE35
+        hash ^= hash >> 16
         return CGFloat(hash % 360) / 360
     }
 }
