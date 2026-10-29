@@ -68,7 +68,7 @@ A Google file opens in the profile's web app when installed there:
 `main` + `dev`. All work commits to `dev` and is pushed immediately; `main` advances only by a
 fast-forward to `dev` at release. `VERSION` is the single version source; tags are
 `v<VERSION>`, each with a GitHub release carrying notes. Cutting a release: bump `VERSION`,
-curate `README.md`, tag, publish. `just bundle` signs `.build/manicule.app` with the identity
+curate `README.md`, tag, publish. `just bundle` signs `.build/Manicule.app` with the identity
 named by `APPLE_SIGNING_IDENTITY`, else ad-hoc.
 
 ## Build & test

@@ -20,8 +20,8 @@ per-profile web-app launchers are not built yet.
 ```bash
 just test      # unit tests
 just gate      # pre-merge gate
-just bundle    # assemble .build/manicule.app
-just install   # install to /Applications and register with Launch Services
+just bundle    # assemble .build/Manicule.app
+just install   # install to /Applications/Manicule.app and register with Launch Services
 ```
 
 Needs macOS 14+ and the Swift 6 toolchain. Architecture and conventions: [CLAUDE.md](CLAUDE.md).
