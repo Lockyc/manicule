@@ -6,6 +6,7 @@ import ManiculeCore
 struct LauncherWriter {
     var folder: URL
     var chromeApps: URL
+    var signer = URL(fileURLWithPath: "/usr/bin/codesign")
 
     init(home: URL) {
         folder = home.appendingPathComponent("Applications/Manicule Launchers")
@@ -70,7 +71,8 @@ struct LauncherWriter {
         let iconDest = bundle.appendingPathComponent("Contents/Resources/app.icns")
         if (try? Data(contentsOf: plistURL)) == plistData,
            (try? Data(contentsOf: scriptURL)) == scriptData,
-           fm.fileExists(atPath: iconDest.path) == (icon != nil) {
+           fm.fileExists(atPath: iconDest.path) == (icon != nil),
+           fm.isExecutableFile(atPath: scriptURL.path) {
             return
         }
 
@@ -85,13 +87,17 @@ struct LauncherWriter {
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
 
         let sign = Process()
-        sign.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        sign.executableURL = signer
         sign.arguments = ["--force", "--sign", "-", bundle.path]
         sign.standardOutput = FileHandle.nullDevice
         sign.standardError = FileHandle.nullDevice
-        try sign.run()
+        do { try sign.run() } catch {
+            try? fm.removeItem(at: bundle)
+            throw error
+        }
         sign.waitUntilExit()
         guard sign.terminationStatus == 0 else {
+            try? fm.removeItem(at: bundle)  // an unsigned bundle must not pass the skip check next time
             throw Failure(app: spec.appName, reason: "codesign exited \(sign.terminationStatus)")
         }
     }

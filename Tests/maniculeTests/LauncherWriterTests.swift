@@ -78,4 +78,21 @@ final class LauncherWriterTests: XCTestCase {
         let after = try FileManager.default.attributesOfItem(atPath: plist.path)[.modificationDate] as? Date
         XCTAssertEqual(after, past)
     }
+
+    func testFailedSigningRemovesBundleAndNextWriteRebuilds() throws {
+        var writer = LauncherWriter(home: home)
+        writer.signer = URL(fileURLWithPath: "/usr/bin/false")
+        let failures = writer.write([spec("Docs – LSJC")])
+        XCTAssertEqual(failures.count, 1)
+        let bundle = writer.folder.appendingPathComponent("Docs – LSJC.app")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: bundle.path))
+        writer.signer = URL(fileURLWithPath: "/usr/bin/codesign")
+        XCTAssertTrue(writer.write([spec("Docs – LSJC")]).isEmpty)
+        let verify = Process()
+        verify.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        verify.arguments = ["--verify", bundle.path]
+        try verify.run()
+        verify.waitUntilExit()
+        XCTAssertEqual(verify.terminationStatus, 0)
+    }
 }
