@@ -52,6 +52,19 @@ final class RuleTests: XCTestCase {
         XCTAssertFalse(r.matches(url: url("https://example.test/"), sourceApp: nil))
     }
 
+    func testRuleAddedInSettingsStartsOffWithAnEmptyCondition() {
+        let r = Rule.new(target: "safari|")
+        XCTAssertFalse(r.isEnabled)
+        XCTAssertEqual(r.matchers, [.hostSuffix("")])
+        XCTAssertFalse(r.hasCondition)
+    }
+
+    func testHasConditionNeedsANonBlankValue() {
+        XCTAssertFalse(rule([]).hasCondition)
+        XCTAssertFalse(rule([.hostSuffix("  "), .urlContains("")]).hasCondition)
+        XCTAssertTrue(rule([.hostSuffix(""), .pathContains("/x")]).hasCondition)
+    }
+
     func testAlwaysStripsWWW() {
         let r = Rule.always(host: "www.example.test", target: "chrome|Profile 3")
         XCTAssertEqual(r.matchers, [.hostSuffix("example.test")])

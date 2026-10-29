@@ -125,4 +125,14 @@ public struct Rule: Codable, Hashable, Identifiable, Sendable {
         let bare = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
         return Rule(title: "\(host) → \(target)", matchers: [.hostSuffix(bare)], target: target)
     }
+
+    /// A rule added in Settings: one empty condition, off until the user fills it in and turns it on.
+    public static func new(target: String) -> Rule {
+        Rule(title: "New rule", matchers: [.hostSuffix("")], target: target, isEnabled: false)
+    }
+
+    /// At least one condition has a value; only then can the rule be turned on.
+    public var hasCondition: Bool {
+        matchers.contains { !$0.value.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
 }

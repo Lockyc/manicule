@@ -125,7 +125,7 @@ struct RulesTab: View {
             HStack {
                 Button("Add Rule") {
                     guard let first = model.config.targets.first else { return }
-                    model.config.rules.append(Rule(title: "New rule", matchers: [.hostSuffix("")], target: first.id))
+                    model.config.rules.append(.new(target: first.id))
                 }
                 .disabled(model.config.targets.isEmpty)
                 if model.config.targets.isEmpty {
@@ -145,11 +145,12 @@ struct RuleRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Toggle("Enabled", isOn: $rule.isEnabled).toggleStyle(.checkbox)
+                    .disabled(!rule.isEnabled && !rule.hasCondition)
                 TextField("Title", text: $rule.title).font(.headline)
                 Button(role: .destructive, action: delete) { Label("Delete Rule", systemImage: "trash") }
             }
-            if rule.matchers.isEmpty {
-                Text("Add a condition — this rule is off until it has one").foregroundStyle(.secondary)
+            if !rule.hasCondition {
+                Text("Fill in a condition to turn this rule on").foregroundStyle(.secondary)
             }
             ForEach(Array(rule.matchers.indices), id: \.self) { index in
                 HStack {
