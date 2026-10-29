@@ -30,6 +30,18 @@ Deliberately deferred work. Remove an entry when it ships.
   arrives. Deferred: launch-on-demand already routes every link; starting at login only puts the
   ☞ menu up earlier. Unlock: an "Open at login" toggle in General backed by
   `SMAppService.mainApp`.
+- **Uninstalled browsers.** A target counts as available when its profile is discovered, and
+  an uninstalled browser often leaves its profile folder behind, so routing can still pick it and
+  the launch fails (logged). Deferred: rare on a maintained Mac. Unlock: count a browser's
+  profiles only when `NSWorkspace.urlForApplication(withBundleIdentifier:)` finds the app.
+- **Firefox with a different profile running.** When Firefox is running, links go to its binary,
+  which hands off to that profile's instance — or, if a different profile is the running one,
+  starts a second instance as Manicule's child. Deferred: one-profile use is the norm. Unlock:
+  check whether the target profile is the running one and use `NSWorkspace.openApplication`
+  when it isn't.
+- **Save-refusal notice on every tab.** When the config file can't be safely written, only
+  General says so; edits on other tabs look saved until Settings reloads. Unlock: show the
+  notice in the window title or on every tab.
 - **Wide picker strips.** The strip is one row of fixed-width tiles; past about 25 visible
   targets it is wider than the screen and tiles fall off the edge. Deferred: the strip is meant
   for a curated handful (nine have number keys). Unlock: someone showing that many — cap the
