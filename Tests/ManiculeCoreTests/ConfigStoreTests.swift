@@ -9,7 +9,55 @@ final class ConfigStoreTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        for path in [dir.path, dir.appendingPathComponent("config.json").path] {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
+        }
         try? FileManager.default.removeItem(at: dir)
+    }
+
+    private func writeConfigFile(_ text: String) throws -> URL {
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let file = dir.appendingPathComponent("config.json")
+        try Data(text.utf8).write(to: file)
+        return file
+    }
+
+    func testUnreadableFileIsNeverOverwritten() throws {
+        let file = try writeConfigFile(#"{"targets":[]}"#)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: file.path)
+        let store = ConfigStore(directory: dir)
+        XCTAssertEqual(store.load(discovered: discovered), Config.defaults(from: discovered))
+        XCTAssertNotNil(store.saveRefusal)
+        XCTAssertThrowsError(try store.save(Config.defaults(from: discovered)))
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), #"{"targets":[]}"#)
+    }
+
+    func testCorruptFileThatCantBeMovedAsideIsNeverOverwritten() throws {
+        let file = try writeConfigFile("{not json")
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: dir.path)
+        let store = ConfigStore(directory: dir)
+        XCTAssertEqual(store.load(discovered: discovered), Config.defaults(from: discovered))
+        XCTAssertNotNil(store.saveRefusal)
+        XCTAssertThrowsError(try store.save(Config.defaults(from: discovered)))
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), "{not json")
+    }
+
+    func testCleanLoadsAllowSaving() throws {
+        let missing = ConfigStore(directory: dir)
+        _ = missing.load(discovered: discovered)
+        XCTAssertNil(missing.saveRefusal)
+        XCTAssertNoThrow(try missing.save(Config.defaults(from: discovered)))
+
+        _ = try writeConfigFile("{not json")
+        let corrupt = ConfigStore(directory: dir)
+        _ = corrupt.load(discovered: discovered)
+        XCTAssertNil(corrupt.saveRefusal, "moved aside, so nothing is lost by saving")
+        XCTAssertNoThrow(try corrupt.save(Config.defaults(from: discovered)))
+    }
+
+    func testSaveBeforeLoadIsRefused() {
+        XCTAssertThrowsError(try ConfigStore(directory: dir).save(Config.defaults(from: discovered)))
     }
 
     private let discovered: [DiscoveredProfile] = [
@@ -130,8 +178,9 @@ final class ConfigStoreTests: XCTestCase {
         c.recordPick(link("https://docs.google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: true)
         c.recordOutcome(link("https://example.test/"), target: "safari|")
         let store = ConfigStore(directory: dir)
+        _ = store.load(discovered: discovered)
         try store.save(c)
-        XCTAssertEqual(store.load(discovered: discovered), c)
+        XCTAssertEqual(ConfigStore(directory: dir).load(discovered: discovered), c)
     }
 
     /// A config written by another version: keys missing (defaults fill them) and keys unknown (ignored).

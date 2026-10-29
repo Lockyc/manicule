@@ -32,8 +32,25 @@ final class SettingsTests: XCTestCase {
         var config = Config.defaults(from: ProfileDiscovery.discoverAll(home: home))
         config.rules = [Rule(title: "Example", matchers: [.hostSuffix("example.com")], target: "safari|")]
         config.rememberedDocuments = ["abc123": "safari|"]
-        try ConfigStore(directory: dir).save(config)
+        let seeding = ConfigStore(directory: dir)
+        _ = seeding.load(discovered: [])
+        try seeding.save(config)
         return AppModel(store: ConfigStore(directory: dir), home: home)
+    }
+
+    func testUnsavableConfigIsReportedAndLeftAlone() throws {
+        _ = try seededModel()
+        let file = dir.appendingPathComponent("config.json")
+        let before = try Data(contentsOf: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: file.path)
+        lockedFiles.append(file)
+        let model = AppModel(store: ConfigStore(directory: dir), home: home)
+        model.config.rules = []
+        let problem = try XCTUnwrap(GeneralTab.saveProblem(model.saveRefusal))
+        XCTAssertTrue(problem.hasPrefix("Settings can't be saved: "), problem)
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path)
+        XCTAssertEqual(try Data(contentsOf: file), before)
+        XCTAssertNil(GeneralTab.saveProblem(nil))
     }
 
     private func savedConfig() throws -> Config {

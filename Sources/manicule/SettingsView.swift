@@ -277,8 +277,15 @@ struct GeneralTab: View {
     @State private var failure: String?
     @State private var importNote: String?
 
+    static func saveProblem(_ refusal: String?) -> String? {
+        refusal.map { "Settings can't be saved: \($0)" }
+    }
+
     var body: some View {
         Form {
+            if let problem = Self.saveProblem(model.saveRefusal) {
+                Section { Text(problem).foregroundStyle(.red).textSelection(.enabled) }
+            }
             Section("Import") {
                 HStack {
                     Button("Import rules from Velja") { importNote = model.importVeljaRules() }

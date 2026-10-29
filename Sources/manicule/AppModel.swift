@@ -20,6 +20,8 @@ final class AppModel {
     private(set) var discovered: [DiscoveredProfile] = []
     /// Installed browsers whose profile file macOS won't let Manicule read yet.
     private(set) var unreadable: [BrowserRoot] = []
+    /// Why changes can't be saved (the config file couldn't be taken in safely); nil when they can.
+    private(set) var saveRefusal: String?
 
     init(store: ConfigStore, home: URL = FileManager.default.homeDirectoryForCurrentUser) {
         self.store = store
@@ -35,6 +37,7 @@ final class AppModel {
         discovered = ProfileDiscovery.discoverAll(home: home)
         unreadable = ProfileDiscovery.unreadableRoots(home: home)
         var loaded = store.load(discovered: discovered)
+        saveRefusal = store.saveRefusal
         loaded.merge(discovered: discovered)
         config = loaded
         refreshLaunchers()
@@ -70,7 +73,7 @@ final class AppModel {
 
     private func save() {
         do { try store.save(config) } catch {
-            Self.log.error("config save failed: \(error.localizedDescription, privacy: .public)")
+            Self.log.error("config save failed: \(String(describing: error), privacy: .public)")
         }
     }
 }
