@@ -52,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func receive(_ link: IncomingLink) {
-        switch Router.decide(link, state: model.config.routerState) {
+        switch Router.decide(link, state: model.routerState) {
         case .open(let target, _):
             open(link, in: target)
             model.config.recordOutcome(link, target: target.id)
@@ -62,8 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func present(_ link: IncomingLink, preselected: Target.ID?) {
-        let targets = model.config.visible.compactMap { model.target($0) }
-        picker.show(link, targets: targets, preselected: preselected) { [weak self] action in
+        picker.show(link, targets: model.routerState.pickerTargets, preselected: preselected) { [weak self] action in
             self?.finish(link, action)
         }
     }
@@ -93,7 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showNext() {
         var next = queue.resolveCurrent()
         while let link = next {
-            switch Router.decide(link, state: model.config.routerState) {
+            switch Router.decide(link, state: model.routerState) {
             case .pick(let preselected):
                 present(link, preselected: preselected)
                 return

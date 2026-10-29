@@ -114,8 +114,20 @@ final class SettingsTests: XCTestCase {
 
     func testTargetDetailNamesBrowserAccountAndFolder() {
         let target = Target(id: "chrome|Profile 3", browser: .chrome, profile: "Profile 3", name: "Work", email: "a@example.com")
-        XCTAssertEqual(TargetsTab.detail(target), "Chrome · a@example.com · Folder: Profile 3")
+        XCTAssertEqual(TargetsTab.detail(target, found: true), "Chrome · a@example.com · Folder: Profile 3")
         let safari = Target(id: "safari|", browser: .safari, profile: nil, name: "Safari", email: nil)
-        XCTAssertEqual(TargetsTab.detail(safari), "Safari · No account")
+        XCTAssertEqual(TargetsTab.detail(safari, found: true), "Safari · No account")
+        XCTAssertEqual(TargetsTab.detail(target, found: false),
+                       "Chrome · a@example.com · Folder: Profile 3 · Not found on this Mac")
+    }
+
+    func testTargetMissingFromThisMacStaysListedButLeavesThePicker() throws {
+        let model = try seededModel()
+        model.config.targets.append(Target(id: "chrome|Profile 9", browser: .chrome, profile: "Profile 9",
+                                           name: "Gone", email: nil))
+        model.config.setVisible("chrome|Profile 9", true)
+        XCTAssertFalse(model.available.contains("chrome|Profile 9"))
+        XCTAssertTrue(model.config.targets.contains { $0.id == "chrome|Profile 9" })
+        XCTAssertFalse(model.routerState.pickerTargets.contains { $0.id == "chrome|Profile 9" })
     }
 }

@@ -112,6 +112,19 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(c, before)
     }
 
+    func testAvailableTargetsAreDiscoveredOrInAnUnreadableBrowser() {
+        var c = Config.defaults(from: discovered)
+        c.targets.append(Target(id: "chrome|Profile 9", browser: .chrome, profile: "Profile 9", name: "Gone", email: nil))
+        c.targets.append(Target(id: "chromium|Default", browser: .chromium, profile: "Default", name: "Gone too", email: nil))
+        let onlySafari = [discovered[3]]
+        XCTAssertEqual(c.available(discovered: discovered, unreadable: []),
+                       ["chrome|Default", "chrome|Profile 1", "firefox|Profiles/x.default-release", "safari|"])
+        XCTAssertEqual(c.available(discovered: onlySafari, unreadable: [.chrome]),
+                       ["chrome|Default", "chrome|Profile 1", "chrome|Profile 9", "safari|"],
+                       "a browser that can't be read yet isn't penalised")
+        XCTAssertEqual(c.routerState(available: ["safari|"]).available, ["safari|"])
+    }
+
     func testRoundTrip() throws {
         var c = Config.defaults(from: discovered)
         c.recordPick(link("https://docs.google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: true)

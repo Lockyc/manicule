@@ -74,7 +74,8 @@ struct TargetsTab: View {
                             .resizable().frame(width: 24, height: 24)
                         VStack(alignment: .leading, spacing: 2) {
                             TextField("Name", text: $target.name)
-                            Text(Self.detail(target)).font(.caption).foregroundStyle(.secondary)
+                            Text(Self.detail(target, found: model.available.contains(target.id)))
+                                .font(.caption).foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                         }
                     }
@@ -90,10 +91,11 @@ struct TargetsTab: View {
         }
     }
 
-    static func detail(_ target: Target) -> String {
+    static func detail(_ target: Target, found: Bool) -> String {
         var parts = [target.browser.displayName]
         parts.append(target.email ?? "No account")
         if let profile = target.profile { parts.append("Folder: \(profile)") }
+        if !found { parts.append("Not found on this Mac") }
         return parts.joined(separator: " · ")
     }
 }

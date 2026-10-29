@@ -9,10 +9,11 @@ final class RouterTests: XCTestCase {
     let doc = "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
 
     func state(rules: [Rule] = [], remembered: [String: String] = [:], last: [String: String] = [:],
-               visible: [String]? = nil) -> RouterState {
+               visible: [String]? = nil, available: Set<String>? = nil) -> RouterState {
         let targets = [def, p3, ff, saf]
         return RouterState(targets: targets, visible: visible ?? targets.map(\.id), rules: rules,
-                           rememberedDocuments: remembered, lastChoiceByHost: last)
+                           rememberedDocuments: remembered, lastChoiceByHost: last,
+                           available: available ?? Set(targets.map(\.id)))
     }
 
     func link(_ s: String, app: String? = nil) -> IncomingLink {
@@ -41,13 +42,13 @@ final class RouterTests: XCTestCase {
     func testRuleBeatsRememberedDocument() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: saf.id)
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(rules: [r], remembered: [doc:def.id]))
+                              state: state(rules: [r], remembered: [doc: def.id]))
         XCTAssertEqual(d, .open(saf, .rule(r.id)))
     }
 
     func testRememberedDocumentOpens() {
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(remembered: [doc:def.id]))
+                              state: state(remembered: [doc: def.id]))
         XCTAssertEqual(d, .open(def, .rememberedDocument))
     }
 
@@ -70,9 +71,31 @@ final class RouterTests: XCTestCase {
     func testDanglingTargetsFallThroughToPicker() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: "chrome|Gone")
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(rules: [r], remembered: [doc:"chrome|Gone"],
+                              state: state(rules: [r], remembered: [doc: "chrome|Gone"],
                                            last: ["docs.google.com": "chrome|Gone"]))
         XCTAssertEqual(d, .pick(preselected: def.id))
+    }
+
+    /// A target still in the config whose profile (or browser) is gone from this Mac.
+    func testTargetNotFoundOnThisMacIsDanglingInEveryStep() {
+        let gone: Set<String> = [def.id, ff.id, saf.id]
+        let viaEmail = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit?authuser=h%40example.com"),
+                                     state: state(available: gone))
+        XCTAssertEqual(viaEmail, .pick(preselected: def.id))
+        let r = Rule(title: "a", matchers: [.hostSuffix("example.com")], target: p3.id)
+        XCTAssertEqual(Router.decide(link("https://example.com/"), state: state(rules: [r], available: gone)),
+                       .pick(preselected: def.id))
+        XCTAssertEqual(Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
+                                     state: state(remembered: [doc: p3.id], available: gone)),
+                       .pick(preselected: def.id))
+        XCTAssertEqual(Router.decide(link("https://example.com/"),
+                                     state: state(last: ["example.com": p3.id], visible: [p3.id, ff.id], available: gone)),
+                       .pick(preselected: ff.id))
+    }
+
+    func testPickerStripLeavesOutTargetsNotFound() {
+        let s = state(visible: [p3.id, def.id, saf.id], available: [def.id, ff.id, saf.id])
+        XCTAssertEqual(s.pickerTargets, [def, saf])
     }
 
     func testHostlessURLGoesToPicker() {

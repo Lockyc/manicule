@@ -44,6 +44,13 @@ final class AppModel {
         config.targets.first { $0.id == id }
     }
 
+    /// Targets that can open on this Mac now; the rest show as not found and never route.
+    var available: Set<Target.ID> {
+        config.available(discovered: discovered, unreadable: unreadable.map(\.browser))
+    }
+
+    var routerState: RouterState { config.routerState(available: available) }
+
     static let veljaPreferences = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Containers/com.sindresorhus.Velja/Data/Library/Preferences/com.sindresorhus.Velja.plist")
 

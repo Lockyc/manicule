@@ -36,9 +36,17 @@ public struct Config: Codable, Equatable, Sendable {
         self.history = history
     }
 
-    public var routerState: RouterState {
+    public func routerState(available: Set<Target.ID>) -> RouterState {
         RouterState(targets: targets, visible: visible, rules: rules,
-                    rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost)
+                    rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
+                    available: available)
+    }
+
+    /// Targets that can open on this Mac: found by this discovery, or in a browser whose profile
+    /// file can't be read yet (unknown, so not penalised).
+    public func available(discovered: [DiscoveredProfile], unreadable: [Browser]) -> Set<Target.ID> {
+        let found = Set(Config.defaults(from: discovered).targets.map(\.id))
+        return Set(targets.filter { found.contains($0.id) || unreadable.contains($0.browser) }.map(\.id))
     }
 }
 
