@@ -57,7 +57,10 @@ extension AppModel {
         let shown = Set(config.visible)
         let specs = LauncherSpecs.make(visible: config.targets.filter { shown.contains($0.id) }, profiles: discovered)
         guard specs != writtenLaunchers else { return }
-        writtenLaunchers = specs
-        launchers.write(specs)
+        let failures = launchers.write(specs)
+        for failure in failures {
+            Self.log.error("launcher write failed: \(failure.description, privacy: .public)")
+        }
+        if failures.isEmpty { writtenLaunchers = specs }
     }
 }

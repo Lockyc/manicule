@@ -12,30 +12,47 @@ struct LauncherWriter {
         chromeApps = home.appendingPathComponent("Applications/Chrome Apps.localized")
     }
 
-    func write(_ specs: [LauncherSpec]) {
+    struct Failure: Error, CustomStringConvertible {
+        var app: String
+        var reason: String
+        var description: String { "\(app): \(reason)" }
+    }
+
+    /// Brings `folder` in line with `specs`; returns what could not be written. A bundle already
+    /// on disk exactly as it would be written is left untouched.
+    func write(_ specs: [LauncherSpec]) -> [Failure] {
         let fm = FileManager.default
-        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
-        let wanted = Set(specs.map { $0.appName + ".app" })
-        let existing = (try? fm.contentsOfDirectory(atPath: folder.path)) ?? []
-        for name in existing where name.hasSuffix(".app") && !wanted.contains(name) {
-            try? fm.removeItem(at: folder.appendingPathComponent(name))
+        var failures: [Failure] = []
+        do { try fm.createDirectory(at: folder, withIntermediateDirectories: true) } catch {
+            return [Failure(app: folder.lastPathComponent, reason: error.localizedDescription)]
         }
-        for spec in specs { try? writeBundle(spec) }
+        let wanted = Set(specs.map { Self.fileName($0.appName) })
+        for name in (try? fm.contentsOfDirectory(atPath: folder.path)) ?? []
+        where name.hasSuffix(".app") && !wanted.contains(name) {
+            do { try fm.removeItem(at: folder.appendingPathComponent(name)) } catch {
+                failures.append(Failure(app: name, reason: error.localizedDescription))
+            }
+        }
+        for spec in specs {
+            do { try writeBundle(spec) } catch {
+                failures.append(Failure(app: spec.appName, reason: "\(error)"))
+            }
+        }
+        return failures
+    }
+
+    /// The launcher's file name: path separators in a profile name never reach the file system.
+    static func fileName(_ appName: String) -> String {
+        appName.map { $0 == "/" || $0 == ":" ? "-" : $0 }.reduce("") { $0 + String($1) } + ".app"
     }
 
     private func writeBundle(_ spec: LauncherSpec) throws {
         let fm = FileManager.default
-        let bundle = folder.appendingPathComponent(spec.appName + ".app")
-        try? fm.removeItem(at: bundle)
-        let macOS = bundle.appendingPathComponent("Contents/MacOS")
-        let resources = bundle.appendingPathComponent("Contents/Resources")
-        try fm.createDirectory(at: macOS, withIntermediateDirectories: true)
-
-        var hasIcon = false
-        if let icon = iconURL(chromeAppID: spec.chromeAppID) {
-            try fm.createDirectory(at: resources, withIntermediateDirectories: true)
-            hasIcon = (try? fm.copyItem(at: icon, to: resources.appendingPathComponent("app.icns"))) != nil
+        let bundle = folder.appendingPathComponent(Self.fileName(spec.appName))
+        guard bundle.standardizedFileURL.deletingLastPathComponent().path == folder.standardizedFileURL.path else {
+            throw Failure(app: spec.appName, reason: "path escapes the launchers folder")
         }
+        let icon = iconURL(chromeAppID: spec.chromeAppID)
 
         var plist: [String: Any] = [
             "CFBundleIdentifier": spec.bundleID,
@@ -44,13 +61,28 @@ struct LauncherWriter {
             "CFBundlePackageType": "APPL",
             "LSUIElement": true,
         ]
-        if hasIcon { plist["CFBundleIconFile"] = "app" }
-        let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-        try data.write(to: bundle.appendingPathComponent("Contents/Info.plist"))
+        if icon != nil { plist["CFBundleIconFile"] = "app" }
+        let plistData = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+        let scriptData = Data(LauncherSpecs.script(for: spec.command).utf8)
 
-        let script = macOS.appendingPathComponent("launch")
-        try LauncherSpecs.script(for: spec.command).write(to: script, atomically: true, encoding: .utf8)
-        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+        let plistURL = bundle.appendingPathComponent("Contents/Info.plist")
+        let scriptURL = bundle.appendingPathComponent("Contents/MacOS/launch")
+        let iconDest = bundle.appendingPathComponent("Contents/Resources/app.icns")
+        if (try? Data(contentsOf: plistURL)) == plistData,
+           (try? Data(contentsOf: scriptURL)) == scriptData,
+           fm.fileExists(atPath: iconDest.path) == (icon != nil) {
+            return
+        }
+
+        try? fm.removeItem(at: bundle)
+        try fm.createDirectory(at: scriptURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let icon {
+            try fm.createDirectory(at: iconDest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fm.copyItem(at: icon, to: iconDest)
+        }
+        try plistData.write(to: plistURL)
+        try scriptData.write(to: scriptURL)
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
 
         let sign = Process()
         sign.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
@@ -59,6 +91,9 @@ struct LauncherWriter {
         sign.standardError = FileHandle.nullDevice
         try sign.run()
         sign.waitUntilExit()
+        guard sign.terminationStatus == 0 else {
+            throw Failure(app: spec.appName, reason: "codesign exited \(sign.terminationStatus)")
+        }
     }
 
     /// Chrome's own shim for the app: the bundle whose `CrAppModeShortcutID` is the app id.
