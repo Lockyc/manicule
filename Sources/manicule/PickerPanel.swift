@@ -13,11 +13,11 @@ final class PickerPanel: NSObject, @MainActor Picking {
     private let content = PickerContentView()
     private let urlLabel = NSTextField(labelWithString: "")
     private let sourceLabel = NSTextField(labelWithString: "")
-    private let copyButton = NSButton(title: "Copy", target: nil, action: nil)
+    let copyButton = HoverButton(title: "Copy", target: nil, action: nil)
     private let strip = NSStackView()
 
     private var model: PickerModel?
-    private var tiles: [TileView] = []
+    private(set) var tiles: [TileView] = []
     private var completion: ((PickerAction) -> Void)?
     private var clickMonitor: Any?
     private var sourceNames: [String: String] = [:]
@@ -50,11 +50,13 @@ final class PickerPanel: NSObject, @MainActor Picking {
         urlLabel.lineBreakMode = .byTruncatingMiddle
         urlLabel.font = .systemFont(ofSize: 12, weight: .medium)
         urlLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        // The URL takes the slack, which pins the source name and Copy to the right edge.
+        urlLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         sourceLabel.font = .systemFont(ofSize: 11)
         sourceLabel.textColor = .secondaryLabelColor
         sourceLabel.setContentHuggingPriority(.required, for: .horizontal)
-        copyButton.bezelStyle = .accessoryBarAction
-        copyButton.controlSize = .small
+        copyButton.font = .systemFont(ofSize: 11, weight: .medium)
+        copyButton.setContentHuggingPriority(.required, for: .horizontal)
         copyButton.target = self
         copyButton.action = #selector(copyClicked)
         copyButton.toolTip = "Copy the link without tracking parameters (C)"
@@ -63,6 +65,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         let header = NSStackView(views: [urlLabel, sourceLabel, copyButton])
         header.orientation = .horizontal
         header.spacing = 8
+        header.distribution = .fill
         strip.orientation = .horizontal
         strip.spacing = 0
         let column = NSStackView(views: [header, strip])
@@ -206,6 +209,18 @@ final class TileView: NSView {
     let target: Target
     var onClick: (() -> Void)?
     var isSelected = false { didSet { needsDisplay = true } }
+    private(set) var isHovered = false { didSet { needsDisplay = true } }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        // .activeAlways: the panel never activates the app, so .activeInKeyWindow would never fire.
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                                       owner: self))
+    }
+
+    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseExited(with event: NSEvent) { isHovered = false }
 
     @MainActor
     init(target: Target, number: Int?) {
@@ -253,11 +268,52 @@ final class TileView: NSView {
 
     required init?(coder: NSCoder) { fatalError("not used") }
 
+    /// Keyboard selection is accent-tinted; hover is a neutral wash, so the two read apart and can stack.
     override func draw(_ dirtyRect: NSRect) {
-        guard isSelected else { return }
-        NSColor.controlAccentColor.withAlphaComponent(0.25).setFill()
-        NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8).fill()
+        let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
+        if isSelected {
+            NSColor.controlAccentColor.withAlphaComponent(0.25).setFill()
+            shape.fill()
+        }
+        if isHovered {
+            NSColor.labelColor.withAlphaComponent(0.08).setFill()
+            shape.fill()
+        }
     }
 
     override func mouseDown(with event: NSEvent) { onClick?() }
+}
+
+/// A borderless text button with a rounded background that brightens under the pointer.
+final class HoverButton: NSButton {
+    private(set) var isHovered = false { didSet { needsDisplay = true } }
+
+    convenience init(title: String, target: AnyObject?, action: Selector?) {
+        self.init(frame: .zero)
+        self.title = title
+        self.target = target
+        self.action = action
+        isBordered = false
+    }
+
+    override var intrinsicContentSize: NSSize {
+        let size = super.intrinsicContentSize
+        return NSSize(width: size.width + 16, height: max(size.height + 4, 20))
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                                       owner: self))
+    }
+
+    override func mouseEntered(with event: NSEvent) { isHovered = true }
+    override func mouseExited(with event: NSEvent) { isHovered = false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.labelColor.withAlphaComponent(isHovered ? 0.16 : 0.07).setFill()
+        NSBezierPath(roundedRect: bounds, xRadius: 5, yRadius: 5).fill()
+        super.draw(dirtyRect)
+    }
 }

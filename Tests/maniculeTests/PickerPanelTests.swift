@@ -58,6 +58,33 @@ final class PickerPanelTests: XCTestCase {
         XCTAssertEqual(actions(), [.copy(TrackingParameters.stripped(link.url))])
     }
 
+    func testCopyButtonSitsAtTheRightEdge() throws {
+        let picker = PickerPanel()
+        _ = show(picker)
+        let content = try XCTUnwrap(picker.panel.contentView)
+        content.layoutSubtreeIfNeeded()
+        let copy = picker.copyButton.convert(picker.copyButton.bounds, to: content)
+        XCTAssertEqual(copy.maxX, content.bounds.maxX - 10, accuracy: 1, "flush with the right padding")
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
+    func testTilesAndCopyHighlightOnHover() throws {
+        let picker = PickerPanel()
+        _ = show(picker)
+        let tile = try XCTUnwrap(picker.tiles.first)
+        let mouse = try XCTUnwrap(NSEvent.mouseEvent(with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0,
+                                                     windowNumber: 0, context: nil, eventNumber: 0, clickCount: 0, pressure: 0))
+        XCTAssertFalse(tile.trackingAreas.isEmpty)
+        tile.mouseEntered(with: mouse)
+        XCTAssertTrue(tile.isHovered)
+        tile.mouseExited(with: mouse)
+        XCTAssertFalse(tile.isHovered)
+        XCTAssertFalse(picker.copyButton.trackingAreas.isEmpty)
+        picker.copyButton.mouseEntered(with: mouse)
+        XCTAssertTrue(picker.copyButton.isHovered)
+        picker.panel.firstResponder?.keyDown(with: key("\u{1B}", 53))
+    }
+
     func testFrameStaysOnScreen() throws {
         let screen = try XCTUnwrap(NSScreen.main)
         let corner = NSPoint(x: screen.visibleFrame.maxX - 1, y: screen.visibleFrame.minY + 1)
