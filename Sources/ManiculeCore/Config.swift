@@ -61,6 +61,18 @@ extension Config {
         return Config(targets: targets, visible: targets.map(\.id))
     }
 
+    /// Folds a later discovery in: unknown profiles are appended hidden, known targets take the
+    /// discovered email. Names, order and `visible` are the user's; no target is ever removed.
+    public mutating func merge(discovered: [DiscoveredProfile]) {
+        for found in Config.defaults(from: discovered).targets {
+            if let index = targets.firstIndex(where: { $0.id == found.id }) {
+                targets[index].email = found.email
+            } else {
+                targets.append(found)
+            }
+        }
+    }
+
     /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule.
     public mutating func recordPick(_ link: IncomingLink, target: Target.ID, always: Bool) {
         let host = link.url.host?.lowercased()

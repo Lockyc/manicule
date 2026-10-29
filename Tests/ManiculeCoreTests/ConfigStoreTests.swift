@@ -77,6 +77,39 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(c.history.last?.url.absoluteString, "https://example.test/104")
     }
 
+    func testMergeAddsNewProfilesHidden() {
+        var c = Config.defaults(from: [discovered[3]])
+        c.merge(discovered: discovered)
+        XCTAssertEqual(c.targets.map(\.id), ["safari|", "chrome|Default", "chrome|Profile 1", "firefox|Profiles/x.default-release"])
+        XCTAssertEqual(c.targets[1].name, "Chrome · Work")
+        XCTAssertEqual(c.targets[1].email, "a@example.test")
+        XCTAssertEqual(c.visible, ["safari|"])
+    }
+
+    func testMergeRefreshesEmailKeepsNameAndOrder() {
+        var c = Config.defaults(from: discovered)
+        c.targets.reverse()
+        c.targets[3].name = "Collins"
+        c.targets[3].email = "old@example.test"
+        c.visible = ["chrome|Default"]
+        var renamed = discovered
+        renamed[0].name = "Renamed in Chrome"
+        renamed[0].email = "new@example.test"
+        let before = c
+        c.merge(discovered: renamed)
+        XCTAssertEqual(c.targets.map(\.id), before.targets.map(\.id))
+        XCTAssertEqual(c.targets.map(\.name), before.targets.map(\.name))
+        XCTAssertEqual(c.targets[3].email, "new@example.test")
+        XCTAssertEqual(c.visible, ["chrome|Default"])
+    }
+
+    func testMergeNeverRemovesTargets() {
+        var c = Config.defaults(from: discovered)
+        let before = c
+        c.merge(discovered: [discovered[3]])
+        XCTAssertEqual(c, before)
+    }
+
     func testRoundTrip() throws {
         var c = Config.defaults(from: discovered)
         c.recordPick(link("https://docs.google.com/document/d/abc/edit"), target: "chrome|Default", always: true)

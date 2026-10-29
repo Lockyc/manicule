@@ -53,3 +53,48 @@ final class ProfileDiscoveryTests: XCTestCase {
         XCTAssertEqual(found, [DiscoveredProfile(browser: .safari, directory: "", name: "Safari", email: nil, installedWebApps: [])])
     }
 }
+
+final class UnreadableRootsTests: XCTestCase {
+    private var lockedFiles: [URL] = []
+
+    override func tearDownWithError() throws {
+        for file in lockedFiles {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path)
+        }
+    }
+
+    private func makeHome() throws -> URL {
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("manicule-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: home) }
+        return home
+    }
+
+    func testUnreadableRootListedWhenFileUnreadable() throws {
+        let home = try makeHome()
+        let chrome = home.appendingPathComponent("Library/Application Support/Google/Chrome", isDirectory: true)
+        try FileManager.default.createDirectory(at: chrome, withIntermediateDirectories: true)
+        let file = chrome.appendingPathComponent("Local State")
+        try Data("{}".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: file.path)
+        lockedFiles.append(file)
+        XCTAssertEqual(ProfileDiscovery.unreadableRoots(home: home),
+                       [BrowserRoot(browser: .chrome, folder: chrome, profileFile: file)])
+    }
+
+    func testMissingBrowserIsNotUnreadable() throws {
+        XCTAssertEqual(ProfileDiscovery.unreadableRoots(home: try makeHome()), [])
+    }
+
+    func testReadableAndFilelessRootsAreNotUnreadable() throws {
+        let home = try makeHome()
+        let support = home.appendingPathComponent("Library/Application Support")
+        let firefox = support.appendingPathComponent("Firefox")
+        try FileManager.default.createDirectory(at: firefox, withIntermediateDirectories: true)
+        try Data("[Profile0]\n".utf8).write(to: firefox.appendingPathComponent("profiles.ini"))
+        try FileManager.default.createDirectory(at: support.appendingPathComponent("Chromium"),
+                                                withIntermediateDirectories: true)
+        XCTAssertEqual(ProfileDiscovery.unreadableRoots(home: home), [])
+    }
+}
