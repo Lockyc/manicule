@@ -27,6 +27,16 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         self.name = name
         self.email = email
     }
+
+    /// Joins a browser to a profile name in default target names ("Chrome · Work").
+    public static let nameSeparator = " · "
+
+    /// The name without a leading "<Browser> · ", for space-tight places like a picker tile.
+    public var shortName: String {
+        guard let range = name.range(of: Self.nameSeparator) else { return name }
+        let rest = name[range.upperBound...]
+        return rest.isEmpty ? name : String(rest)
+    }
 }
 
 public struct DiscoveredProfile: Equatable, Sendable {

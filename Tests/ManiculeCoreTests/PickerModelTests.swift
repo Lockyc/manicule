@@ -72,3 +72,17 @@ final class PickerModelTests: XCTestCase {
         XCTAssertEqual(m.handle(.escape), .cancel)
     }
 }
+
+final class TargetShortNameTests: XCTestCase {
+    func testShortNameDropsTheBrowserPrefixOfDefaultNames() {
+        let config = Config.defaults(from: [
+            DiscoveredProfile(browser: .chromium, directory: "Default", name: "Personal", email: nil, installedWebApps: []),
+            DiscoveredProfile(browser: .safari, directory: "", name: "Safari", email: nil, installedWebApps: []),
+        ])
+        XCTAssertEqual(config.targets.map(\.shortName), ["Personal", "Safari"])
+    }
+
+    func testShortNameKeepsAUserNameWhole() {
+        XCTAssertEqual(Target(id: "x", browser: .chrome, profile: nil, name: "Work", email: nil).shortName, "Work")
+    }
+}

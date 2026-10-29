@@ -46,12 +46,13 @@ extension Config {
     /// One target per discovered profile, all visible.
     public static func defaults(from discovered: [DiscoveredProfile]) -> Config {
         let firefoxCount = discovered.filter { $0.browser == .firefox }.count
+        let separator = Target.nameSeparator
         let targets = discovered.map { p -> Target in
             let name: String
             switch p.browser {
-            case .chrome: name = "Chrome · \(p.name)"
-            case .chromium: name = "Chromium · \(p.name)"
-            case .firefox: name = firefoxCount > 1 ? "Firefox · \(p.name)" : "Firefox"
+            case .chrome: name = "Chrome\(separator)\(p.name)"
+            case .chromium: name = "Chromium\(separator)\(p.name)"
+            case .firefox: name = firefoxCount > 1 ? "Firefox\(separator)\(p.name)" : "Firefox"
             case .safari: name = "Safari"
             }
             return Target(id: "\(p.browser.rawValue)|\(p.directory)", browser: p.browser,

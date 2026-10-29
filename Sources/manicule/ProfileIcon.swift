@@ -45,9 +45,9 @@ enum ProfileIcon {
         }
     }
 
-    /// A circle in a colour fixed by the target id, carrying the name's first letter.
+    /// A circle in a colour fixed by the target id, carrying the short name's first letter.
     private static func initial(_ target: Target) -> NSImage {
-        let letter = target.name.first.map { String($0).uppercased() } ?? "?"
+        let letter = target.shortName.first.map { String($0).uppercased() } ?? "?"
         let colour = NSColor(hue: hue(target.id), saturation: 0.55, brightness: 0.78, alpha: 1)
         return NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
             colour.setFill()

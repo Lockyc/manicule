@@ -201,7 +201,7 @@ final class PickerContentView: NSView {
     }
 }
 
-/// One target in the strip: its picture, number and name; tooltip is the account email.
+/// One target in the strip: its picture, number and short name; the tooltip adds the full name and email.
 final class TileView: NSView {
     let target: Target
     var onClick: (() -> Void)?
@@ -211,7 +211,7 @@ final class TileView: NSView {
     init(target: Target, number: Int?) {
         self.target = target
         super.init(frame: NSRect(x: 0, y: 0, width: PickerPanel.tile, height: PickerPanel.tile))
-        toolTip = target.email ?? target.name
+        toolTip = [target.name, target.email].compactMap { $0 }.joined(separator: "\n")
         translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             widthAnchor.constraint(equalToConstant: PickerPanel.tile),
@@ -220,7 +220,7 @@ final class TileView: NSView {
 
         let image = NSImageView(image: ProfileIcon.image(for: target))
         image.imageScaling = .scaleProportionallyUpOrDown
-        let name = NSTextField(labelWithString: target.name)
+        let name = NSTextField(labelWithString: target.shortName)
         name.font = .systemFont(ofSize: 10)
         name.alignment = .center
         name.lineBreakMode = .byTruncatingTail
