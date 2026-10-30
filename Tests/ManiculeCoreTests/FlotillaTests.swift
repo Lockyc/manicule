@@ -86,6 +86,15 @@ final class FlotillaTests: XCTestCase {
         XCTAssertEqual(groups.map(\.browser), [.flotilla, .flotilla])
     }
 
+    func testGroupTargetsKeepTheFirstOfARepeatedName() {
+        let twice = [FlotillaWindow(title: "Rotary", colour: "#17458f", groups: ["Bulletins", "Minutes", "Bulletins"]),
+                     FlotillaWindow(title: "Work", colour: nil, groups: ["Bulletins"])]
+        XCTAssertEqual(Flotilla.groupTargets(twice).map(\.id),
+                       [Flotilla.groupID(window: "Rotary", group: "Bulletins"),
+                        Flotilla.groupID(window: "Rotary", group: "Minutes"),
+                        Flotilla.groupID(window: "Work", group: "Bulletins")])
+    }
+
     // MARK: - Config and routing
 
     private let saf = DiscoveredProfile(browser: .safari, directory: "", name: "Safari", email: nil, installedWebApps: [])

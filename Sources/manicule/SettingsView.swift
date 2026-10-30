@@ -163,13 +163,14 @@ struct RulesTab: View {
     @Bindable var model: AppModel
 
     var body: some View {
+        // Read once per render: it loads flotilla's manifest from disk.
+        let state = model.routerState
         VStack(alignment: .leading, spacing: 8) {
             Text("Rules are checked top to bottom; the first that matches opens the link without the picker. Drag a rule to reorder.")
                 .foregroundStyle(.secondary)
             List {
-                let choices = Self.choices(model)
                 ForEach($model.config.rules) { $rule in
-                    RuleRow(rule: $rule, targets: choices, missingName: model.targetName(rule.target)) {
+                    RuleRow(rule: $rule, targets: Self.choices(state), missingName: model.targetName(rule.target, in: state)) {
                         model.config.rules.removeAll { $0.id == rule.id }
                     }
                 }
@@ -194,7 +195,7 @@ struct RulesTab: View {
     }
 
     /// "Opens in": every stored target and flotilla's open groups, in picker order.
-    static func choices(_ model: AppModel) -> [Target] { model.routerState.targets }
+    static func choices(_ state: RouterState) -> [Target] { state.targets }
 }
 
 struct RuleRow: View {
@@ -300,6 +301,8 @@ struct DocumentsTab: View {
     @Bindable var model: AppModel
 
     var body: some View {
+        // Read once per render: it loads flotilla's manifest from disk.
+        let state = model.routerState
         VStack(alignment: .leading, spacing: 8) {
             Text("Google files you picked a target for open there again without the picker.")
                 .foregroundStyle(.secondary)
@@ -309,7 +312,7 @@ struct DocumentsTab: View {
                         Text(fileID).font(.body.monospaced()).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                         Spacer()
                         let target = model.config.rememberedDocuments[fileID] ?? ""
-                        Text(model.targetName(target))
+                        Text(model.targetName(target, in: state))
                         Button(role: .destructive) { model.config.rememberedDocuments[fileID] = nil } label: {
                             Label("Forget", systemImage: "trash")
                         }

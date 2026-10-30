@@ -77,10 +77,11 @@ final class AppModel {
                            flotillaGroups: Flotilla.groupTargets(Flotilla.load(from: Flotilla.manifest(home: home))))
     }
 
-    /// What Settings calls a target a rule or remembered document names: a gone flotilla group by
-    /// its "(closed)" name, a stored target by its own even when it isn't on this Mac.
-    func targetName(_ id: Target.ID) -> String {
-        routerState.target(id)?.name ?? target(id)?.name ?? "Missing target (\(id))"
+    /// What Settings calls a target a rule or remembered document names, in `state` (a view's one
+    /// `routerState` read): a gone flotilla group by its "(closed)" name, a stored target by its
+    /// own even when it isn't on this Mac.
+    func targetName(_ id: Target.ID, in state: RouterState) -> String {
+        state.target(id)?.name ?? target(id)?.name ?? "Missing target (\(id))"
     }
 
     /// Settings → Targets' sections: browsers installed, unreadable or with targets, in browser order.

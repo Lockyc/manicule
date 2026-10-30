@@ -93,14 +93,17 @@ public enum Flotilla {
         }
     }
 
-    /// Every window's groups, windows in manifest order and groups in sidebar order.
+    /// Every window's groups, windows in manifest order and groups in sidebar order; a group
+    /// whose id repeats an earlier one (the same name twice in a window) is left out.
     public static func groupTargets(_ windows: [FlotillaWindow]) -> [Target] {
-        windows.flatMap { window in
+        var seen = Set<Target.ID>()
+        return windows.flatMap { window in
             window.groups.map { group in
                 Target(id: groupID(window: window.title, group: group), browser: .flotilla, profile: nil,
                        name: groupName(window: window.title, group: group), email: nil, colour: window.colour)
             }
         }
+        .filter { seen.insert($0.id).inserted }
     }
 
     /// A window target's default name.

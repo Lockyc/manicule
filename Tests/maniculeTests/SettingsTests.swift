@@ -51,16 +51,17 @@ final class SettingsTests: XCTestCase {
     func testRulePickerOffersGroupsAndNamesGoneOnes() throws {
         try writeFlotillaManifest(groups: ["Bulletins"])
         let model = try seededModel(installed: [.safari, .flotilla])
-        XCTAssertEqual(RulesTab.choices(model).filter { $0.browser == .flotilla }.map(\.name),
+        XCTAssertEqual(RulesTab.choices(model.routerState).filter { $0.browser == .flotilla }.map(\.name),
                        ["flotilla", "flotilla · Rotary", "flotilla · Rotary ▸ Bulletins"])
 
         try writeFlotillaManifest(groups: ["Bulletins", "Minutes"])
-        XCTAssertTrue(RulesTab.choices(model).contains { $0.id == "flotilla|Rotary|Minutes" }, "read per routing, no reload")
+        XCTAssertTrue(RulesTab.choices(model.routerState).contains { $0.id == "flotilla|Rotary|Minutes" }, "read per routing, no reload")
 
         let gone = Flotilla.groupID(window: "Rotary", group: "Agenda")
-        XCTAssertEqual(model.targetName(gone), "flotilla · Rotary ▸ Agenda (closed)")
-        XCTAssertEqual(model.targetName("safari|"), "Safari")
-        XCTAssertEqual(model.targetName("chrome|Profile 9"), "Missing target (chrome|Profile 9)")
+        let state = model.routerState
+        XCTAssertEqual(model.targetName(gone, in: state), "flotilla · Rotary ▸ Agenda (closed)")
+        XCTAssertEqual(model.targetName("safari|", in: state), "Safari")
+        XCTAssertEqual(model.targetName("chrome|Profile 9", in: state), "Missing target (chrome|Profile 9)")
         model.config.rules[0].target = gone
         model.config.rememberedDocuments["abc123"] = gone
         for view in [AnyView(RulesTab(model: model)), AnyView(DocumentsTab(model: model))] {

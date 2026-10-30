@@ -42,3 +42,7 @@ Deliberately deferred work. Remove an entry when it ships.
   targets it is wider than the screen and tiles fall off the edge. Deferred: the strip is meant
   for a curated handful (nine have number keys), with the rest under ⋯. Unlock: someone showing that many — cap the
   width and scroll, or wrap to a second row.
+- **Renamed flotilla windows and groups.** Renaming a flotilla window or group makes Manicule see
+  a new one, so a rule or remembered document naming the old name falls back to the picker
+  (window) or to flotilla's Incoming (group). Deferred: flotilla identifies windows by title
+  only. Unlock: a stable window and group id in flotilla's config, published in `windows.json`.
