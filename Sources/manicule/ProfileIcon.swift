@@ -34,9 +34,8 @@ enum ProfileIcon {
 
     /// Chrome and Chromium keep the signed-in account's avatar as a PNG in the profile directory.
     private static func profilePicture(_ target: Target, home: URL) -> NSImage? {
-        let root = target.browser == .chrome ? "Google/Chrome" : "Chromium"
-        let file = home.appendingPathComponent("Library/Application Support/\(root)")
-            .appendingPathComponent(target.profile ?? "Default")
+        guard let folder = ProfileDiscovery.folder(of: target.browser, home: home) else { return nil }
+        let file = folder.appendingPathComponent(target.profile ?? "Default")
             .appendingPathComponent("Google Profile Picture.png")
         guard let picture = NSImage(contentsOf: file) else { return nil }
         return circular(picture)

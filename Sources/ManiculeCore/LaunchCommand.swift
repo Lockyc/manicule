@@ -21,7 +21,7 @@ public enum Launch {
         target: Target,
         installedWebApps: Set<String>,
         firefoxApp: String = "/Applications/Firefox.app",
-        firefoxRoot: String = NSHomeDirectory() + "/Library/Application Support/Firefox"
+        firefoxRoot: String = ProfileDiscovery.folder(of: .firefox, home: URL(fileURLWithPath: NSHomeDirectory()))!.path
     ) -> LaunchCommand {
         let link = url.absoluteString
         switch target.browser {

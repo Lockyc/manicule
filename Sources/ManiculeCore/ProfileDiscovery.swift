@@ -63,12 +63,23 @@ public enum ProfileDiscovery {
 
     /// Every browser whose profiles live in a file: Chrome, Chromium, Firefox (Safari has none).
     public static func roots(home: URL) -> [BrowserRoot] {
-        let support = home.appendingPathComponent("Library/Application Support")
-        return [(Browser.chrome, "Google/Chrome", "Local State"), (.chromium, "Chromium", "Local State"),
-                (.firefox, "Firefox", "profiles.ini")].map { browser, sub, file in
-            let folder = support.appendingPathComponent(sub, isDirectory: true)
-            return BrowserRoot(browser: browser, folder: folder, profileFile: folder.appendingPathComponent(file))
+        [(Browser.chrome, "Local State"), (.chromium, "Local State"), (.firefox, "profiles.ini")].compactMap { browser, file in
+            folder(of: browser, home: home).map {
+                BrowserRoot(browser: browser, folder: $0, profileFile: $0.appendingPathComponent(file))
+            }
         }
+    }
+
+    /// The folder holding a browser's profiles; nil for Safari, which has no profile folders.
+    public static func folder(of browser: Browser, home: URL) -> URL? {
+        let sub: String
+        switch browser {
+        case .chrome: sub = "Google/Chrome"
+        case .chromium: sub = "Chromium"
+        case .firefox: sub = "Firefox"
+        case .safari: return nil
+        }
+        return home.appendingPathComponent("Library/Application Support").appendingPathComponent(sub, isDirectory: true)
     }
 
     /// Installed browsers whose profile file exists but can't be read — macOS withholds it until
