@@ -15,7 +15,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         self.openAgain = openAgain
         self.showSettings = showSettings
         super.init()
-        item.button?.title = "☞"
+        item.button?.image = MenuBarIcon.image()
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
