@@ -13,7 +13,8 @@ public struct LaunchCommand: Equatable, Sendable {
 public enum Launch {
     static let open = "/usr/bin/open"
 
-    /// The command that opens `url` in `target`. The URL is passed through unaltered.
+    /// The command that opens `url` in `target`. The URL is passed through unaltered; for a
+    /// flotilla window or group it travels whole inside flotilla's own URL.
     /// Firefox is launched through its own binary: it hands the URL to an already-running
     /// instance of that profile, where `open -na` would start a second instance.
     public static func command(
@@ -28,7 +29,8 @@ public enum Launch {
         case .safari:
             return LaunchCommand(executable: open, arguments: ["-a", "Safari", link])
         case .flotilla:
-            return LaunchCommand(executable: open, arguments: ["-b", target.browser.bundleID, link])
+            return LaunchCommand(executable: open,
+                                 arguments: ["-b", target.browser.bundleID, Flotilla.openURL(url, target: target) ?? link])
         case .firefox:
             var args: [String] = []
             if let profile = target.profile, !profile.isEmpty {

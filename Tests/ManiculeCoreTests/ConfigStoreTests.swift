@@ -187,7 +187,7 @@ final class ConfigStoreTests: XCTestCase {
     func testConfigWithMissingAndUnknownKeysDecodes() throws {
         let rule = "6F1C2A4E-0B8D-4C59-9E43-2D1B7A5F0C11"
         let json = """
-        {"targets":[{"id":"chrome|Default","browser":"chrome","profile":"Default","name":"Chrome · Work","colour":"red"},
+        {"targets":[{"id":"chrome|Default","browser":"chrome","profile":"Default","name":"Chrome · Work","badge":"red"},
                     {"id":"safari|","browser":"safari"}],
          "visible":["chrome|Default"],
          "rules":[{"id":"\(rule)","title":"r","matchers":[{"hostSuffix":{"_0":"example.test"}}],"target":"safari|"}],

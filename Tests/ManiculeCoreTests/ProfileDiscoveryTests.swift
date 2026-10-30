@@ -90,6 +90,20 @@ final class ProfileDiscoveryTests: XCTestCase {
         let found = ProfileDiscovery.discoverAll(home: try makeHome(), installed: [.flotilla])
         XCTAssertEqual(found.map(\.targetID), ["safari|", "flotilla|"])
     }
+
+    func testFlotillasWindowsFollowThePlainTarget() throws {
+        let home = try makeHome()
+        let file = Flotilla.manifest(home: home)
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try ##"{"version":1,"windows":[{"title":"Rotary Club","colour":"#17458f","groups":["Bulletins"]},{"title":"B","colour":null,"groups":[]}]}"##
+            .write(to: file, atomically: true, encoding: .utf8)
+        let found = ProfileDiscovery.discoverAll(home: home, installed: [.flotilla])
+        XCTAssertEqual(found.map(\.targetID), ["safari|", "flotilla|", "flotilla|Rotary%20Club", "flotilla|B"])
+        XCTAssertEqual(found.map(\.name), ["Safari", "flotilla", "Rotary Club", "B"])
+        XCTAssertEqual(found.map(\.colour), [nil, nil, "#17458f", nil])
+        XCTAssertEqual(ProfileDiscovery.discoverAll(home: home, installed: []).map(\.targetID), ["safari|"],
+                       "no windows without flotilla")
+    }
 }
 
 final class UnreadableRootsTests: XCTestCase {

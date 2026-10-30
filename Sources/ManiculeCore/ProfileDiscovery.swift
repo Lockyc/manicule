@@ -101,8 +101,8 @@ public enum ProfileDiscovery {
         }
     }
 
-    /// Every profile in the browsers' profile files, then Safari, then flotilla when `installed`
-    /// holds it (Safari ships with macOS; flotilla may be absent).
+    /// Every profile in the browsers' profile files, then Safari, then flotilla and its windows
+    /// when `installed` holds it (Safari ships with macOS; flotilla may be absent).
     public static func discoverAll(home: URL, installed: Set<Browser>) -> [DiscoveredProfile] {
         var result: [DiscoveredProfile] = []
         for root in roots(home: home) {
@@ -131,6 +131,7 @@ public enum ProfileDiscovery {
         if installed.contains(.flotilla) {
             result.append(DiscoveredProfile(browser: .flotilla, directory: "", name: Browser.flotilla.displayName,
                                             email: nil, installedWebApps: []))
+            result += Flotilla.load(from: Flotilla.manifest(home: home)).map(DiscoveredProfile.init(window:))
         }
         return result
     }

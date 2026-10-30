@@ -38,10 +38,14 @@ public struct RouterState: Sendable {
         self.available = available
     }
 
-    /// The target with this id, when it exists and is available.
+    /// The target with this id, when it exists and is available. A flotilla group that is gone
+    /// still opens in flotilla while flotilla is available, under a "(closed)" name.
     public func target(_ id: Target.ID?) -> Target? {
-        guard let id, available.contains(id) else { return nil }
-        return targets.first { $0.id == id }
+        guard let id else { return nil }
+        if available.contains(id), let found = targets.first(where: { $0.id == id }) { return found }
+        guard available.contains(Flotilla.plainID), case let (window?, group?) = Flotilla.parse(id) else { return nil }
+        return Target(id: id, browser: .flotilla, profile: nil,
+                      name: Flotilla.groupName(window: window, group: group) + Flotilla.closedSuffix, email: nil)
     }
 
     /// The picker strip: pinned targets that are available, in `targets` order.

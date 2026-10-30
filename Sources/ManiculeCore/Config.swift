@@ -85,10 +85,14 @@ public struct Config: Codable, Equatable, Sendable {
         return browserOrder.filter(present.contains)
     }
 
-    public func routerState(available: Set<Target.ID>) -> RouterState {
-        RouterState(targets: orderedTargets, visible: visible, rules: rules,
-                    rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
-                    available: available)
+    /// `flotillaGroups` (`Flotilla.groupTargets`, read fresh) join the targets after flotilla's
+    /// windows and count as available while plain flotilla is; they are never pinned.
+    public func routerState(available: Set<Target.ID>, flotillaGroups: [Target] = []) -> RouterState {
+        let groups = available.contains(Flotilla.plainID) ? flotillaGroups : []
+        return RouterState(targets: browserOrder.flatMap { targets(of: $0) + ($0 == .flotilla ? groups : []) },
+                           visible: visible, rules: rules,
+                           rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
+                           available: available.union(groups.map(\.id)))
     }
 
     /// Targets that can open on this Mac: found by this discovery, or in a browser whose profile
@@ -110,20 +114,24 @@ extension Config {
             switch p.browser {
             case .chrome, .chromium: name = "\(browser)\(separator)\(p.name)"
             case .firefox: name = firefoxCount > 1 ? "\(browser)\(separator)\(p.name)" : browser
-            case .safari, .flotilla: name = browser
+            case .flotilla: name = p.directory.isEmpty ? browser : Flotilla.windowName(p.name)
+            case .safari: name = browser
             }
-            return Target(id: p.targetID, browser: p.browser,
-                          profile: p.directory.isEmpty ? nil : p.directory, name: name, email: p.email)
+            // A flotilla window's directory is its encoded title, not a folder.
+            let folder = p.directory.isEmpty || p.browser == .flotilla ? nil : p.directory
+            return Target(id: p.targetID, browser: p.browser, profile: folder, name: name, email: p.email,
+                          colour: p.colour)
         }
         return Config(targets: targets, visible: targets.map(\.id))
     }
 
     /// Folds a later discovery in: unknown profiles are appended hidden, known targets take the
-    /// discovered email. Names, order and `visible` are the user's; no target is ever removed.
+    /// discovered email and colour. Names, order and `visible` are the user's; no target is ever removed.
     public mutating func merge(discovered: [DiscoveredProfile]) {
         for found in Config.defaults(from: discovered).targets {
             if let index = targets.firstIndex(where: { $0.id == found.id }) {
                 targets[index].email = found.email
+                targets[index].colour = found.colour
             } else {
                 targets.append(found)
             }

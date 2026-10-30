@@ -15,8 +15,8 @@ file (HTML document) link goes through it and it alone decides where the link op
 URL has no host, so it reaches the picker unless a non-host rule matches it. Other schemes are
 logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
-not just browsers; flotilla (a document workspace) is one more single target, found only when
-installed. The `Browser` enum names every target kind. One Swift package, no Xcode project, no third-party dependencies.
+not just browsers; flotilla (a document workspace) is found only when installed, with its windows
+as profiles and its groups as unstored targets under ⋯ (`Flotilla`). The `Browser` enum names every target kind. One Swift package, no Xcode project, no third-party dependencies.
 
 **What's next:** `docs/FOLLOWUPS.md` — deliberately deferred work.
 

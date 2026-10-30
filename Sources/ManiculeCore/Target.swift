@@ -1,7 +1,7 @@
 import Foundation
 
 public enum Browser: String, Codable, CaseIterable, Sendable {
-    /// `flotilla` is a document workspace, not a browser: one target, like Safari.
+    /// `flotilla` is a document workspace, not a browser: its windows are its profiles (`Flotilla`).
     case chrome, chromium, firefox, safari, flotilla
 
     public var displayName: String {
@@ -31,13 +31,16 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
     public var profile: String?
     public var name: String
     public var email: String?
+    /// The tile tint, a CSS hex colour: a flotilla window's own colour, refreshed by discovery.
+    public var colour: String?
 
-    public init(id: String, browser: Browser, profile: String?, name: String, email: String?) {
+    public init(id: String, browser: Browser, profile: String?, name: String, email: String?, colour: String? = nil) {
         self.id = id
         self.browser = browser
         self.profile = profile
         self.name = name
         self.email = email
+        self.colour = colour
     }
 
     /// The line under a picker tile's name, for tiles whose short name another tile shares: the
@@ -71,7 +74,8 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         self.init(id: try c.decode(String.self, forKey: .id), browser: browser,
                   profile: try c.decodeIfPresent(String.self, forKey: .profile),
                   name: try c.decodeIfPresent(String.self, forKey: .name) ?? browser.displayName,
-                  email: try c.decodeIfPresent(String.self, forKey: .email))
+                  email: try c.decodeIfPresent(String.self, forKey: .email),
+                  colour: try c.decodeIfPresent(String.self, forKey: .colour))
     }
 
     /// Joins a browser to a profile name in default target names ("Chrome · Work").
@@ -93,15 +97,18 @@ public struct DiscoveredProfile: Equatable, Sendable {
     public var installedWebApps: Set<String>
     /// The browser's own default profile (Firefox's install default).
     public var isDefault: Bool
+    /// A flotilla window's colour; the target's tile tint.
+    public var colour: String?
 
     public init(browser: Browser, directory: String, name: String, email: String?, installedWebApps: Set<String>,
-                isDefault: Bool = false) {
+                isDefault: Bool = false, colour: String? = nil) {
         self.browser = browser
         self.directory = directory
         self.name = name
         self.email = email
         self.installedWebApps = installedWebApps
         self.isDefault = isDefault
+        self.colour = colour
     }
 
     /// The id of the target this profile becomes.

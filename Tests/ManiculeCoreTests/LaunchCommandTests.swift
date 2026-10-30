@@ -51,6 +51,21 @@ final class LaunchCommandTests: XCTestCase {
                                         arguments: ["-b", "au.lsjc.flotilla", "https://drive.google.com/drive/folders/x"]))
     }
 
+    func testGroupLinkSurvivesEncoding() {
+        let url = URL(string: "https://docs.google.com/document/d/A/edit?usp=sharing&x=1+b#heading=h.1")!
+        let group = Flotilla.groupTargets([FlotillaWindow(title: "Rotary Club", colour: nil, groups: ["Bulletins"])])[0]
+        XCTAssertEqual(Launch.command(for: url, target: group, installedWebApps: []), LaunchCommand(
+            executable: "/usr/bin/open",
+            arguments: ["-b", "au.lsjc.flotilla",
+                        "flotilla://open?window=Rotary%20Club&group=Bulletins&url=https%3A%2F%2Fdocs.google.com%2Fdocument%2Fd%2FA%2Fedit%3Fusp%3Dsharing%26x%3D1%2Bb%23heading%3Dh.1"]))
+    }
+
+    func testFlotillaWindowGetsNoGroup() {
+        let window = Target(id: Flotilla.windowID("A&B"), browser: .flotilla, profile: nil, name: "n", email: nil)
+        XCTAssertEqual(Launch.command(for: URL(string: "https://example.com/")!, target: window, installedWebApps: []).arguments,
+                       ["-b", "au.lsjc.flotilla", "flotilla://open?window=A%26B&url=https%3A%2F%2Fexample.com%2F"])
+    }
+
     func testWebAppCommand() {
         XCTAssertEqual(Launch.webAppCommand(app: .docs, target: target(.chrome, "Profile 3")).arguments,
             ["-na", "Google Chrome", "--args", "--profile-directory=Profile 3", "--app-id=" + docsID])
