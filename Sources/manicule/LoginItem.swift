@@ -11,16 +11,10 @@ enum LoginItem {
         status == .enabled || status == .requiresApproval
     }
 
-    /// Whether the toggle can act: macOS finds no login item for an app run outside its bundle.
-    static func isAvailable(_ status: SMAppService.Status) -> Bool { status != .notFound }
-
-    /// The line beside the toggle, when there is something to say.
+    /// The line beside the toggle, when there is something to say. `.notFound` is also what an app
+    /// that has never registered reports, so it reads as off rather than unavailable.
     static func note(_ status: SMAppService.Status) -> String? {
-        switch status {
-        case .requiresApproval: "Waiting for approval in System Settings → Login Items"
-        case .notFound: "Available when Manicule runs from /Applications"
-        default: nil
-        }
+        status == .requiresApproval ? "Waiting for approval in System Settings → Login Items" : nil
     }
 
     static func set(_ on: Bool) throws {

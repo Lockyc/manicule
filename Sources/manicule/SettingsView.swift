@@ -383,7 +383,6 @@ struct GeneralTab: View {
                         loginStatus = LoginItem.status
                     }
                 ))
-                .disabled(!LoginItem.isAvailable(loginStatus))
                 if let note = LoginItem.note(loginStatus) {
                     HStack {
                         Text(note).foregroundStyle(.secondary)
