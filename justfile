@@ -48,7 +48,7 @@ bundle: build
 run: bundle
     open -a "$PWD/{{app}}"
 
-# Quit any running Manicule, install to /Applications/Manicule.app, and register with Launch Services
+# Quit any running Manicule, install to /Applications/Manicule.app, register with Launch Services, and relaunch
 [group("app")]
 install: bundle quit
     #!/usr/bin/env bash
@@ -62,6 +62,8 @@ install: bundle quit
     done
     cp -R "{{app}}" "{{installed}}"
     "{{lsregister}}" -f "{{installed}}"
+    # `env -i`: a bare `open` hands the app this terminal's environment, which no Dock/Spotlight launch has.
+    /usr/bin/env -i /usr/bin/open "{{installed}}"
 
 # Quits any running Manicule (its process is `manicule`), force-killing one still alive after 3s.
 [private]
