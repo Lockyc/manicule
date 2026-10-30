@@ -20,8 +20,8 @@ final class BrowserOrderTests: XCTestCase {
          "visible":["firefox|"]}
         """
         let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
-        XCTAssertEqual(c.browserOrder, [.firefox, .chrome, .chromium, .safari])
-        XCTAssertEqual(config().browserOrder, [.chrome, .firefox, .safari, .chromium])
+        XCTAssertEqual(c.browserOrder, [.firefox, .chrome, .chromium, .safari, .flotilla])
+        XCTAssertEqual(config().browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
     }
 
     func testStoredBrowserOrderIsCompletedAndUnknownBrowsersDropped() throws {
@@ -30,7 +30,7 @@ final class BrowserOrderTests: XCTestCase {
          "browserOrder":["safari","netscape","safari"]}
         """
         let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
-        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .chromium, .firefox])
+        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .chromium, .firefox, .flotilla])
     }
 
     func testBrowserOrderRoundTrips() throws {
@@ -48,12 +48,12 @@ final class BrowserOrderTests: XCTestCase {
     func testMovingABrowserTakesTheDestinationsPlace() {
         var c = config()
         c.moveBrowser(.safari, to: .chrome)
-        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .firefox, .chromium])
+        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .firefox, .chromium, .flotilla])
         XCTAssertEqual(c.orderedTargets.map(\.id), ["s", "c1", "c2", "c3", "f1"])
         c.moveBrowser(.safari, to: .firefox)
-        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium])
+        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
         c.moveBrowser(.chrome, to: .chrome)
-        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium])
+        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
     }
 
     func testMovingProfilesStaysWithinTheirBrowser() {

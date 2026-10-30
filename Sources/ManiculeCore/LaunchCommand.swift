@@ -27,6 +27,8 @@ public enum Launch {
         switch target.browser {
         case .safari:
             return LaunchCommand(executable: open, arguments: ["-a", "Safari", link])
+        case .flotilla:
+            return LaunchCommand(executable: open, arguments: ["-b", target.browser.bundleID, link])
         case .firefox:
             var args: [String] = []
             if let profile = target.profile, !profile.isEmpty {

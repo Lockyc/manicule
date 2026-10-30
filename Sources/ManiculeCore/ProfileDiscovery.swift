@@ -70,14 +70,14 @@ public enum ProfileDiscovery {
         }
     }
 
-    /// The folder holding a browser's profiles; nil for Safari, which has no profile folders.
+    /// The folder holding a browser's profiles; nil for Safari and flotilla, which have no profile folders.
     public static func folder(of browser: Browser, home: URL) -> URL? {
         let sub: String
         switch browser {
         case .chrome: sub = "Google/Chrome"
         case .chromium: sub = "Chromium"
         case .firefox: sub = "Firefox"
-        case .safari: return nil
+        case .safari, .flotilla: return nil
         }
         return home.appendingPathComponent("Library/Application Support").appendingPathComponent(sub, isDirectory: true)
     }
@@ -101,7 +101,9 @@ public enum ProfileDiscovery {
         }
     }
 
-    public static func discoverAll(home: URL) -> [DiscoveredProfile] {
+    /// Every profile in the browsers' profile files, then Safari, then flotilla when `installed`
+    /// holds it (Safari ships with macOS; flotilla may be absent).
+    public static func discoverAll(home: URL, installed: Set<Browser>) -> [DiscoveredProfile] {
         var result: [DiscoveredProfile] = []
         for root in roots(home: home) {
             switch root.browser {
@@ -120,12 +122,16 @@ public enum ProfileDiscovery {
                 if let text = try? String(contentsOf: root.profileFile, encoding: .utf8) {
                     result += firefox(profilesINI: text)
                 }
-            case .safari:
+            case .safari, .flotilla:
                 continue
             }
         }
         result.append(DiscoveredProfile(browser: .safari, directory: "", name: "Safari",
                                         email: nil, installedWebApps: []))
+        if installed.contains(.flotilla) {
+            result.append(DiscoveredProfile(browser: .flotilla, directory: "", name: Browser.flotilla.displayName,
+                                            email: nil, installedWebApps: []))
+        }
         return result
     }
 }

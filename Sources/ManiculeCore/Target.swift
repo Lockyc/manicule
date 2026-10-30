@@ -1,7 +1,8 @@
 import Foundation
 
 public enum Browser: String, Codable, CaseIterable, Sendable {
-    case chrome, chromium, firefox, safari
+    /// `flotilla` is a document workspace, not a browser: one target, like Safari.
+    case chrome, chromium, firefox, safari, flotilla
 
     public var displayName: String {
         switch self {
@@ -9,6 +10,7 @@ public enum Browser: String, Codable, CaseIterable, Sendable {
         case .chromium: "Chromium"
         case .firefox: "Firefox"
         case .safari: "Safari"
+        case .flotilla: "flotilla"
         }
     }
 
@@ -18,6 +20,7 @@ public enum Browser: String, Codable, CaseIterable, Sendable {
         case .chromium: "org.chromium.Chromium"
         case .firefox: "org.mozilla.firefox"
         case .safari: "com.apple.Safari"
+        case .flotilla: "au.lsjc.flotilla"
         }
     }
 }

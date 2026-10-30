@@ -110,7 +110,7 @@ extension Config {
             switch p.browser {
             case .chrome, .chromium: name = "\(browser)\(separator)\(p.name)"
             case .firefox: name = firefoxCount > 1 ? "\(browser)\(separator)\(p.name)" : browser
-            case .safari: name = browser
+            case .safari, .flotilla: name = browser
             }
             return Target(id: p.targetID, browser: p.browser,
                           profile: p.directory.isEmpty ? nil : p.directory, name: name, email: p.email)

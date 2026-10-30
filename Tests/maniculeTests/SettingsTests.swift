@@ -29,13 +29,13 @@ final class SettingsTests: XCTestCase {
     private let localState = #"{"profile":{"info_cache":{"Default":{"name":"Work","user_name":"a@example.com"}}}}"#
 
     private func seededModel() throws -> AppModel {
-        var config = Config.defaults(from: ProfileDiscovery.discoverAll(home: home))
+        var config = Config.defaults(from: ProfileDiscovery.discoverAll(home: home, installed: []))
         config.rules = [Rule(title: "Example", matchers: [.hostSuffix("example.com")], target: "safari|")]
         config.rememberedDocuments = ["abc123": "safari|"]
         let seeding = ConfigStore(directory: dir)
         _ = seeding.load(discovered: [])
         try seeding.save(config)
-        return AppModel(store: ConfigStore(directory: dir), home: home)
+        return AppModel(store: ConfigStore(directory: dir), home: home, isInstalled: { $0 == .safari })
     }
 
     /// Launchers are rewritten only when targets, visibility or discovery change — a history
@@ -67,7 +67,7 @@ final class SettingsTests: XCTestCase {
         let before = try Data(contentsOf: file)
         try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: file.path)
         lockedFiles.append(file)
-        let model = AppModel(store: ConfigStore(directory: dir), home: home)
+        let model = AppModel(store: ConfigStore(directory: dir), home: home, isInstalled: { $0 == .safari })
         model.config.rules = []
         let problem = try XCTUnwrap(GeneralTab.saveProblem(model.saveRefusal))
         XCTAssertTrue(problem.hasPrefix("Settings can't be saved: "), problem)

@@ -34,9 +34,13 @@ final class AppModel {
     /// Why changes can't be saved (the config file couldn't be taken in safely); nil when they can.
     private(set) var saveRefusal: String?
 
-    init(store: ConfigStore, home: URL = FileManager.default.homeDirectoryForCurrentUser) {
+    @ObservationIgnored private let isInstalled: (Browser) -> Bool
+
+    init(store: ConfigStore, home: URL = FileManager.default.homeDirectoryForCurrentUser,
+         isInstalled: @escaping (Browser) -> Bool = { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) != nil }) {
         self.store = store
         self.home = home
+        self.isInstalled = isInstalled
         self.launchers = LauncherWriter(home: home)
         reload()
     }
@@ -45,9 +49,9 @@ final class AppModel {
     /// (`config`'s didSet saves the result). Run at launch, when Settings opens, and after a
     /// folder-access grant.
     func reload() {
-        discovered = ProfileDiscovery.discoverAll(home: home)
+        installed = Set(Browser.allCases.filter(isInstalled))
+        discovered = ProfileDiscovery.discoverAll(home: home, installed: installed)
         unreadable = ProfileDiscovery.unreadableRoots(home: home)
-        installed = Set(Browser.allCases.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) != nil })
         var loaded = store.load(discovered: discovered)
         saveRefusal = store.saveRefusal
         loaded.merge(discovered: discovered)

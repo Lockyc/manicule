@@ -44,6 +44,13 @@ final class LaunchCommandTests: XCTestCase {
         XCTAssertEqual(c, LaunchCommand(executable: "/usr/bin/open", arguments: ["-a", "Safari", "https://example.com"]))
     }
 
+    func testFlotillaByBundleID() {
+        let c = Launch.command(for: URL(string: "https://drive.google.com/drive/folders/x")!, target: target(.flotilla, nil),
+                               installedWebApps: [])
+        XCTAssertEqual(c, LaunchCommand(executable: "/usr/bin/open",
+                                        arguments: ["-b", "au.lsjc.flotilla", "https://drive.google.com/drive/folders/x"]))
+    }
+
     func testWebAppCommand() {
         XCTAssertEqual(Launch.webAppCommand(app: .docs, target: target(.chrome, "Profile 3")).arguments,
             ["-na", "Google Chrome", "--args", "--profile-directory=Profile 3", "--app-id=" + docsID])

@@ -34,7 +34,7 @@ final class ProfileDiscoveryTests: XCTestCase {
         let apps = chrome.appendingPathComponent("Default/Web Applications/Manifest Resources/docsid123")
         try FileManager.default.createDirectory(at: apps, withIntermediateDirectories: true)
         try localState.write(to: chrome.appendingPathComponent("Local State"), atomically: true, encoding: .utf8)
-        let found = ProfileDiscovery.discoverAll(home: home)
+        let found = ProfileDiscovery.discoverAll(home: home, installed: [])
         XCTAssertEqual(found.first { $0.directory == "Default" }?.installedWebApps, ["docsid123"])
         XCTAssertEqual(found.first { $0.directory == "Profile 3" }?.installedWebApps, [])
     }
@@ -82,8 +82,13 @@ final class ProfileDiscoveryTests: XCTestCase {
     }
 
     func testDiscoverAllSkipsMissingBrowsers() throws {
-        let found = ProfileDiscovery.discoverAll(home: try makeHome())
+        let found = ProfileDiscovery.discoverAll(home: try makeHome(), installed: [])
         XCTAssertEqual(found, [DiscoveredProfile(browser: .safari, directory: "", name: "Safari", email: nil, installedWebApps: [])])
+    }
+
+    func testFlotillaIsATargetOnlyWhenInstalled() throws {
+        let found = ProfileDiscovery.discoverAll(home: try makeHome(), installed: [.flotilla])
+        XCTAssertEqual(found.map(\.targetID), ["safari|", "flotilla|"])
     }
 }
 
