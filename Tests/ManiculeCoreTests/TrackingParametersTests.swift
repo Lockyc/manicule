@@ -22,6 +22,11 @@ final class TrackingParametersTests: XCTestCase {
         XCTAssertEqual(strip("https://example.com/p?UTM_Source=x&FBCLID=y&k=v"), "https://example.com/p?k=v")
     }
 
+    func testKeptValuesKeepTheirEncoding() {
+        XCTAssertEqual(strip("https://example.com/s?q=a%2Bb&next=%2Fx%3Fy%3D1&utm_source=x"),
+                       "https://example.com/s?q=a%2Bb&next=%2Fx%3Fy%3D1")
+    }
+
     func testURLWithoutQueryUnchanged() {
         XCTAssertEqual(strip("https://example.com/p#frag"), "https://example.com/p#frag")
     }

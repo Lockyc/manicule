@@ -11,13 +11,14 @@ public enum TrackingParameters {
     ]
 
     /// The URL without tracking parameters; order of the rest and the fragment are kept,
-    /// and the `?` is dropped when nothing remains.
+    /// and the `?` is dropped when nothing remains. Kept parameters stay percent-encoded as they
+    /// came: decoding and re-encoding them would turn `%2B` into `+`, a space to the server.
     public static func stripped(_ url: URL) -> URL {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let items = components.queryItems else { return url }
-        let kept = items.filter { !isTracking($0.name) }
+              let items = components.percentEncodedQueryItems else { return url }
+        let kept = items.filter { !isTracking($0.name.removingPercentEncoding ?? $0.name) }
         guard kept.count != items.count else { return url }
-        components.queryItems = kept.isEmpty ? nil : kept
+        components.percentEncodedQueryItems = kept.isEmpty ? nil : kept
         return components.url ?? url
     }
 
