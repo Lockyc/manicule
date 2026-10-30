@@ -43,7 +43,9 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     /// Tolerates a config from another version: a missing key takes its default (`visible`
-    /// defaults to every target), an unknown key or browser is ignored.
+    /// defaults to every target), an unknown key or an unknown browser in `browserOrder` is ignored.
+    /// A target with an unknown browser or a rule with an unknown matcher kind fails the decode, so
+    /// `ConfigStore` moves the file aside rather than silently dropping them.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let targets = try c.decodeIfPresent([Target].self, forKey: .targets) ?? []
