@@ -16,7 +16,7 @@ enum MenuBarIcon {
     ]
     private static let units = CGSize(width: 720, height: 428)
 
-    static func image(height: CGFloat = 15, gap: CGFloat = 1) -> NSImage {
+    static func image(height: CGFloat = 11, gap: CGFloat = 0.75) -> NSImage {
         let scale = height / units.height
         let size = NSSize(width: (units.width * scale).rounded(.up), height: height)
         let image = NSImage(size: size, flipped: true) { _ in
