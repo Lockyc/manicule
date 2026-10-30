@@ -3,6 +3,7 @@ app := ".build/Manicule.app"
 installed := "/Applications/Manicule.app"
 lsregister := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 info_plist := "Resources/Info.plist"
+icns := "Resources/AppIcon.icns"
 
 # `default` pipes `just --list` through a small stock-perl filter that clips long recipe
 # docs to your terminal width (…) instead of wrapping. Self-contained — no external files;
@@ -33,6 +34,7 @@ bundle: build
     rm -rf "{{app}}"
     mkdir -p "{{app}}/Contents/MacOS" "{{app}}/Contents/Resources"
     cp .build/release/manicule "{{app}}/Contents/MacOS/manicule"
+    cp "{{icns}}" "{{app}}/Contents/Resources/AppIcon.icns"
     plist="{{app}}/Contents/Info.plist"
     cp "{{info_plist}}" "$plist"
     plutil -replace CFBundleShortVersionString -string "{{version}}" "$plist"
@@ -42,6 +44,11 @@ bundle: build
     else
         codesign --force --sign - "{{app}}"
     fi
+
+# Regenerate Resources/AppIcon.icns from Resources/AppIcon.svg (needs plate: github.com/lockyc/plate)
+[group("build")]
+icon:
+    plate icon --icns "{{icns}}" Resources/AppIcon.svg
 
 # Build and launch manicule
 [group("app")]

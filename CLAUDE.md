@@ -28,6 +28,7 @@ justfile                 # recipes: `just` lists them
 Sources/ManiculeCore/    # all logic — unit-tested
 Sources/manicule/        # the AppKit shell (executable): menu bar, picker panel, Settings
 Resources/Info.plist     # bundle template; `just bundle` fills its version (from VERSION)
+Resources/AppIcon.svg    # app icon source; `just icon` regenerates the tracked AppIcon.icns
 Tests/ManiculeCoreTests/ # unit tests for ManiculeCore
 Tests/maniculeTests/     # the shell
 ```
