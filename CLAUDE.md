@@ -16,7 +16,8 @@ URL has no host, so it reaches the picker unless a non-host rule matches it. Oth
 logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
 not just browsers; flotilla (a document workspace) is found only when installed, with its windows
-as profiles and its groups as unstored targets under ⋯ (`Flotilla`). The `Browser` enum names every target kind. One Swift package, no Xcode project, no third-party dependencies.
+as profiles and its groups as unstored targets under ⋯, read from its manifest on every link
+(`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL). The `Browser` enum names every target kind. One Swift package, no Xcode project, no third-party dependencies.
 
 **What's next:** `docs/FOLLOWUPS.md` — deliberately deferred work.
 

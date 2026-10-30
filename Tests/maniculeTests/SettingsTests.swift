@@ -28,14 +28,47 @@ final class SettingsTests: XCTestCase {
 
     private let localState = #"{"profile":{"info_cache":{"Default":{"name":"Work","user_name":"a@example.com"}}}}"#
 
-    private func seededModel() throws -> AppModel {
+    private func seededModel(installed: Set<Browser> = [.safari]) throws -> AppModel {
         var config = Config.defaults(from: ProfileDiscovery.discoverAll(home: home, installed: []))
         config.rules = [Rule(title: "Example", matchers: [.hostSuffix("example.com")], target: "safari|")]
         config.rememberedDocuments = ["abc123": "safari|"]
         let seeding = ConfigStore(directory: dir)
         _ = seeding.load(discovered: [])
         try seeding.save(config)
-        return AppModel(store: ConfigStore(directory: dir), home: home, isInstalled: { $0 == .safari })
+        return AppModel(store: ConfigStore(directory: dir), home: home, isInstalled: installed.contains)
+    }
+
+    private func writeFlotillaManifest(groups: [String]) throws {
+        let file = Flotilla.manifest(home: home)
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let list = groups.map { "\"\($0)\"" }.joined(separator: ",")
+        try ##"{"version":1,"windows":[{"title":"Rotary","colour":"#17458f","groups":[\##(list)]}]}"##
+            .write(to: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The rule picker offers flotilla's live groups, read from its manifest on every routing; a
+    /// rule or remembered document naming a gone group shows that group's "(closed)" name.
+    func testRulePickerOffersGroupsAndNamesGoneOnes() throws {
+        try writeFlotillaManifest(groups: ["Bulletins"])
+        let model = try seededModel(installed: [.safari, .flotilla])
+        XCTAssertEqual(RulesTab.choices(model).filter { $0.browser == .flotilla }.map(\.name),
+                       ["flotilla", "flotilla · Rotary", "flotilla · Rotary ▸ Bulletins"])
+
+        try writeFlotillaManifest(groups: ["Bulletins", "Minutes"])
+        XCTAssertTrue(RulesTab.choices(model).contains { $0.id == "flotilla|Rotary|Minutes" }, "read per routing, no reload")
+
+        let gone = Flotilla.groupID(window: "Rotary", group: "Agenda")
+        XCTAssertEqual(model.targetName(gone), "flotilla · Rotary ▸ Agenda (closed)")
+        XCTAssertEqual(model.targetName("safari|"), "Safari")
+        XCTAssertEqual(model.targetName("chrome|Profile 9"), "Missing target (chrome|Profile 9)")
+        model.config.rules[0].target = gone
+        model.config.rememberedDocuments["abc123"] = gone
+        for view in [AnyView(RulesTab(model: model)), AnyView(DocumentsTab(model: model))] {
+            let hosting = NSHostingView(rootView: AnyView(view.frame(width: 700, height: 480)))
+            hosting.frame = NSRect(x: 0, y: 0, width: 700, height: 480)
+            hosting.layoutSubtreeIfNeeded()
+            XCTAssertGreaterThan(hosting.fittingSize.height, 0)
+        }
     }
 
     /// Launchers are rewritten only when targets, visibility or discovery change — a history

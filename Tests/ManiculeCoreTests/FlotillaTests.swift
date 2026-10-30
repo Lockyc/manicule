@@ -164,4 +164,16 @@ final class FlotillaTests: XCTestCase {
                        .open(closed, .rememberedDocument))
         XCTAssertNil(state.target(Flotilla.windowID("Gone")), "a gone window is not synthesized")
     }
+
+    func testWindowColourIsTheTileTint() throws {
+        func tint(_ colour: String?) -> [Double]? {
+            Target(id: "flotilla|A", browser: .flotilla, profile: nil, name: "A", email: nil, colour: colour)
+                .tint.map { [$0.red, $0.green, $0.blue] }
+        }
+        XCTAssertEqual(try XCTUnwrap(tint("#ff0080")), [1, 0, 128.0 / 255])
+        XCTAssertEqual(try XCTUnwrap(tint("#17458F")), [0x17, 0x45, 0x8f].map { Double($0) / 255 })
+        for bad in [nil, "", "#fff", "17458f", "#17458g", "#+17458"] {
+            XCTAssertNil(tint(bad), String(describing: bad))
+        }
+    }
 }

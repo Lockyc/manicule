@@ -31,7 +31,8 @@ Click ☞ in the menu bar and open Settings.
    and then Open in the panel; macOS keeps their profile lists from Manicule until you do.
 3. **Targets** — tick **Pinned** for the profiles you want in the picker strip; the rest wait
    under its ⋯ menu (or press `0`). Drag browsers and profiles into order. Profiles found later
-   arrive unpinned.
+   arrive unpinned. flotilla's windows are its profiles, each tile in its window's colour; its
+   open groups are listed under ⋯ and in a rule's **Opens in**.
 4. **General → Import rules from Velja**, if you are coming from Velja.
 5. **General → Open at login**, to keep ☞ in the menu bar from login; otherwise macOS starts
    Manicule when the first link arrives.

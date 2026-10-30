@@ -167,8 +167,9 @@ struct RulesTab: View {
             Text("Rules are checked top to bottom; the first that matches opens the link without the picker. Drag a rule to reorder.")
                 .foregroundStyle(.secondary)
             List {
+                let choices = Self.choices(model)
                 ForEach($model.config.rules) { $rule in
-                    RuleRow(rule: $rule, targets: model.config.targets) {
+                    RuleRow(rule: $rule, targets: choices, missingName: model.targetName(rule.target)) {
                         model.config.rules.removeAll { $0.id == rule.id }
                     }
                 }
@@ -191,11 +192,16 @@ struct RulesTab: View {
             }
         }
     }
+
+    /// "Opens in": every stored target and flotilla's open groups, in picker order.
+    static func choices(_ model: AppModel) -> [Target] { model.routerState.targets }
 }
 
 struct RuleRow: View {
     @Binding var rule: Rule
     let targets: [Target]
+    /// The rule's target's name when `targets` doesn't hold it.
+    let missingName: String
     let delete: () -> Void
 
     var body: some View {
@@ -238,7 +244,7 @@ struct RuleRow: View {
             Picker("Opens in", selection: $rule.target) {
                 ForEach(targets) { Text($0.name).tag($0.id) }
                 if !targets.contains(where: { $0.id == rule.target }) {
-                    Text("Missing target (\(rule.target))").tag(rule.target)
+                    Text(missingName).tag(rule.target)
                 }
             }
             .frame(maxWidth: 360)
@@ -303,7 +309,7 @@ struct DocumentsTab: View {
                         Text(fileID).font(.body.monospaced()).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                         Spacer()
                         let target = model.config.rememberedDocuments[fileID] ?? ""
-                        Text(model.target(target)?.name ?? "Missing target (\(target))")
+                        Text(model.targetName(target))
                         Button(role: .destructive) { model.config.rememberedDocuments[fileID] = nil } label: {
                             Label("Forget", systemImage: "trash")
                         }

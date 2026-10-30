@@ -86,6 +86,27 @@ final class PickerPanelTests: XCTestCase {
         XCTAssertFalse(picker.panel.isVisible)
     }
 
+    /// flotilla's section lists its windows, then their groups, each by its short name.
+    func testMenuListsFlotillaWindowsThenGroups() throws {
+        let window = FlotillaWindow(title: "Rotary", colour: "#17458f", groups: ["Bulletins"])
+        var config = Config.defaults(from: [
+            DiscoveredProfile(browser: .flotilla, directory: "", name: "flotilla", email: nil, installedWebApps: []),
+            DiscoveredProfile(window: window),
+        ])
+        config.visible = []
+        let state = config.routerState(available: Set(config.targets.map(\.id)),
+                                       flotillaGroups: Flotilla.groupTargets([window]))
+        let picker = PickerPanel()
+        let menus = recordMenus(picker)
+        let actions = show(picker, more: state.overflowGroups)
+        picker.panel.firstResponder?.keyDown(with: key("0", 29))
+        let menu = try XCTUnwrap(menus().first?.menu)
+        XCTAssertEqual(menu.items.filter { !$0.isAlternate }.map(\.title),
+                       ["flotilla", "flotilla", "Rotary", "Rotary ▸ Bulletins"])
+        menu.performActionForItem(at: menu.items.firstIndex { $0.title == "Rotary ▸ Bulletins" }!)
+        XCTAssertEqual(actions(), [.open("flotilla|Rotary|Bulletins", always: false)])
+    }
+
     func testOptionChoosingFromTheMenuOpensAlways() throws {
         let picker = PickerPanel()
         let menus = recordMenus(picker)
@@ -257,8 +278,18 @@ final class ProfileIconTests: XCTestCase {
     func testPrewarmFillsTheCache() {
         let target = Target(id: "chromium|Prewarm \(UUID().uuidString)", browser: .chromium, profile: "Nope",
                             name: "Chromium · Prewarm", email: nil)
-        XCTAssertFalse(ProfileIcon.isCached(target.id))
+        XCTAssertFalse(ProfileIcon.isCached(target))
         ProfileIcon.prewarm([target])
-        XCTAssertTrue(ProfileIcon.isCached(target.id))
+        XCTAssertTrue(ProfileIcon.isCached(target))
+    }
+
+    /// A window's tile is redrawn when discovery brings it a new colour.
+    func testRecolouredWindowIsANewPicture() {
+        var window = Target(id: "flotilla|Tint \(UUID().uuidString)", browser: .flotilla, profile: nil,
+                            name: "flotilla · Tint", email: nil, colour: "#17458f")
+        let first = ProfileIcon.image(for: window)
+        window.colour = "#2a6f4e"
+        XCTAssertFalse(ProfileIcon.isCached(window))
+        XCTAssertFalse(ProfileIcon.image(for: window) === first)
     }
 }

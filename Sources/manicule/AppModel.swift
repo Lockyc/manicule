@@ -70,7 +70,18 @@ final class AppModel {
         config.available(discovered: discovered, unreadable: unreadable.map(\.browser))
     }
 
-    var routerState: RouterState { config.routerState(available: available) }
+    /// Read fresh on every call: flotilla's groups come from its manifest, which it rewrites
+    /// whenever its windows change, so each routing sees the groups open now.
+    var routerState: RouterState {
+        config.routerState(available: available,
+                           flotillaGroups: Flotilla.groupTargets(Flotilla.load(from: Flotilla.manifest(home: home))))
+    }
+
+    /// What Settings calls a target a rule or remembered document names: a gone flotilla group by
+    /// its "(closed)" name, a stored target by its own even when it isn't on this Mac.
+    func targetName(_ id: Target.ID) -> String {
+        routerState.target(id)?.name ?? target(id)?.name ?? "Missing target (\(id))"
+    }
 
     /// Settings → Targets' sections: browsers installed, unreadable or with targets, in browser order.
     var browserSections: [Browser] {

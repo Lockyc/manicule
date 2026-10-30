@@ -43,6 +43,15 @@ public struct Target: Codable, Hashable, Identifiable, Sendable {
         self.colour = colour
     }
 
+    /// `colour` as red, green and blue in 0...1; nil without one or when it isn't `#rrggbb`.
+    public var tint: (red: Double, green: Double, blue: Double)? {
+        guard let colour, colour.count == 7, colour.first == "#",
+              colour.dropFirst().allSatisfy(\.isHexDigit),
+              let value = UInt32(colour.dropFirst(), radix: 16) else { return nil }
+        func channel(_ shift: UInt32) -> Double { Double((value >> shift) & 0xFF) / 255 }
+        return (channel(16), channel(8), channel(0))
+    }
+
     /// The line under a picker tile's name, for tiles whose short name another tile shares: the
     /// account email, else the profile folder.
     public static func tileDetails(_ strip: [Target]) -> [Target.ID: String] {

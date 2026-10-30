@@ -1,15 +1,21 @@
 import AppKit
 import ManiculeCore
 
-/// A target's picture for the picker strip, cached per target id for the life of the app.
+/// A target's picture for the picker strip, cached per target id and tint for the life of the app.
 @MainActor
 enum ProfileIcon {
-    private static var cache: [Target.ID: NSImage] = [:]
+    private struct Key: Hashable {
+        var id: Target.ID
+        var colour: String?
+    }
+
+    private static var cache: [Key: NSImage] = [:]
 
     static func image(for target: Target, home: URL = FileManager.default.homeDirectoryForCurrentUser) -> NSImage {
-        if let cached = cache[target.id] { return cached }
+        let key = Key(id: target.id, colour: target.colour)
+        if let cached = cache[key] { return cached }
         let image = load(target, home: home)
-        cache[target.id] = image
+        cache[key] = image
         return image
     }
 
@@ -18,7 +24,7 @@ enum ProfileIcon {
         for target in targets { _ = image(for: target) }
     }
 
-    static func isCached(_ id: Target.ID) -> Bool { cache[id] != nil }
+    static func isCached(_ target: Target) -> Bool { cache[Key(id: target.id, colour: target.colour)] != nil }
 
     private static func load(_ target: Target, home: URL) -> NSImage {
         switch target.browser {
@@ -28,7 +34,19 @@ enum ProfileIcon {
         case .firefox, .safari, .flotilla:
             guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: target.browser.bundleID)
             else { return initial(target) }
-            return NSWorkspace.shared.icon(forFile: app.path)
+            let icon = NSWorkspace.shared.icon(forFile: app.path)
+            guard let tint = target.tint else { return icon }
+            return tinted(icon, NSColor(srgbRed: tint.red, green: tint.green, blue: tint.blue, alpha: 1))
+        }
+    }
+
+    /// The app icon on a disc of `colour`: a flotilla window's tile in that window's colour.
+    private static func tinted(_ icon: NSImage, _ colour: NSColor) -> NSImage {
+        NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
+            colour.setFill()
+            NSBezierPath(ovalIn: rect).fill()
+            icon.draw(in: rect)
+            return true
         }
     }
 
