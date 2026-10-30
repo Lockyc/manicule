@@ -24,10 +24,14 @@ final class SettingsWindowController {
     }
 
     /// Rediscovers profiles (so newly granted or created ones appear), then brings the window front.
+    /// `activate()` is only a request — the system can refuse it for an accessory app opened from
+    /// its status menu, leaving an inactive app's window behind the frontmost one — so the window
+    /// is also ordered front regardless of activation.
     func show() {
         model.reload()
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 }
 
