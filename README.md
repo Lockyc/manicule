@@ -32,6 +32,8 @@ Click ☞ in the menu bar and open Settings.
    under its ⋯ menu (or press `0`). Drag browsers and profiles into order. Profiles found later
    arrive unpinned.
 4. **General → Import rules from Velja**, if you are coming from Velja.
+5. **General → Open at login**, to keep ☞ in the menu bar from login; otherwise macOS starts
+   Manicule when the first link arrives.
 
 ## Build & test
 

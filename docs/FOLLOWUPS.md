@@ -26,10 +26,6 @@ Deliberately deferred work. Remove an entry when it ships.
 - **Firefox profiles at absolute paths.** A profile with `IsRelative=0` is launched as
   `<Firefox folder>/<Path>`, which is wrong for it. Deferred: only profiles created with a custom
   location have it. Unlock: read `IsRelative` in discovery and launch with the absolute path.
-- **Login item.** Manicule doesn't start at login; macOS launches it when the first link
-  arrives. Deferred: launch-on-demand already routes every link; starting at login only puts the
-  ☞ menu up earlier. Unlock: an "Open at login" toggle in General backed by
-  `SMAppService.mainApp`.
 - **Uninstalled browsers.** A target counts as available when its profile is discovered, and
   an uninstalled browser often leaves its profile folder behind, so routing can still pick it and
   the launch fails (logged). Deferred: rare on a maintained Mac. Unlock: count a browser's

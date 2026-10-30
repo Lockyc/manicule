@@ -76,6 +76,18 @@ final class SettingsTests: XCTestCase {
         XCTAssertNil(GeneralTab.saveProblem(nil))
     }
 
+    func testLoginItemToggleFollowsMacOSState() {
+        XCTAssertTrue(LoginItem.isOn(.enabled))
+        XCTAssertTrue(LoginItem.isOn(.requiresApproval), "registered, awaiting approval")
+        XCTAssertFalse(LoginItem.isOn(.notRegistered))
+        XCTAssertFalse(LoginItem.isAvailable(.notFound), "no login item outside the app bundle")
+        XCTAssertTrue(LoginItem.isAvailable(.notRegistered))
+        XCTAssertNotNil(LoginItem.note(.requiresApproval))
+        XCTAssertNotNil(LoginItem.note(.notFound))
+        XCTAssertNil(LoginItem.note(.enabled))
+        XCTAssertNil(LoginItem.note(.notRegistered))
+    }
+
     private func savedConfig() throws -> Config {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601

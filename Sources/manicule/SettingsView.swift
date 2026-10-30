@@ -334,6 +334,8 @@ struct GeneralTab: View {
     @State private var current = DefaultBrowser.current
     @State private var failure: String?
     @State private var importNote: String?
+    @State private var loginStatus = LoginItem.status
+    @State private var loginFailure: String?
 
     static func saveProblem(_ refusal: String?) -> String? {
         refusal.map { "Settings can't be saved: \($0)" }
@@ -372,6 +374,27 @@ struct GeneralTab: View {
                 }
                 if let failure { Text(failure).foregroundStyle(.red) }
             }
+            Section("Startup") {
+                Toggle("Open at login", isOn: Binding(
+                    get: { LoginItem.isOn(loginStatus) },
+                    set: { on in
+                        loginFailure = nil
+                        do { try LoginItem.set(on) } catch { loginFailure = error.localizedDescription }
+                        loginStatus = LoginItem.status
+                    }
+                ))
+                .disabled(!LoginItem.isAvailable(loginStatus))
+                if let note = LoginItem.note(loginStatus) {
+                    HStack {
+                        Text(note).foregroundStyle(.secondary)
+                        if loginStatus == .requiresApproval {
+                            Spacer()
+                            Button("Open Login Items…") { LoginItem.openSettings() }
+                        }
+                    }
+                }
+                if let loginFailure { Text(loginFailure).foregroundStyle(.red) }
+            }
             Section("Browser access") {
                 if model.unreadable.isEmpty {
                     Text("Manicule can read all your browsers' profiles.")
@@ -383,8 +406,12 @@ struct GeneralTab: View {
         .formStyle(.grouped)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             current = DefaultBrowser.current
+            loginStatus = LoginItem.status
         }
-        .onAppear { current = DefaultBrowser.current }
+        .onAppear {
+            current = DefaultBrowser.current
+            loginStatus = LoginItem.status
+        }
     }
 }
 
