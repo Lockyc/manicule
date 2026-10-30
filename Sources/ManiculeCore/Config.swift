@@ -89,8 +89,10 @@ public struct Config: Codable, Equatable, Sendable {
     /// windows and count as available while plain flotilla is; they are never pinned.
     public func routerState(available: Set<Target.ID>, flotillaGroups: [Target] = []) -> RouterState {
         let groups = available.contains(Flotilla.plainID) ? flotillaGroups : []
-        return RouterState(targets: browserOrder.flatMap { targets(of: $0) + ($0 == .flotilla ? groups : []) },
-                           visible: visible, rules: rules,
+        var ordered = orderedTargets
+        let afterFlotilla = ordered.lastIndex { $0.browser == .flotilla }.map { $0 + 1 } ?? ordered.endIndex
+        ordered.insert(contentsOf: groups, at: afterFlotilla)
+        return RouterState(targets: ordered, visible: visible, rules: rules,
                            rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
                            available: available.union(groups.map(\.id)))
     }

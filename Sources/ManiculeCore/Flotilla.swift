@@ -12,6 +12,16 @@ public struct FlotillaWindow: Decodable, Equatable, Sendable {
         self.colour = colour
         self.groups = groups
     }
+
+    /// `title` is required; missing `colour` or `groups` take nil and none.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(title: try c.decode(String.self, forKey: .title),
+                  colour: try c.decodeIfPresent(String.self, forKey: .colour),
+                  groups: try c.decodeIfPresent([String].self, forKey: .groups) ?? [])
+    }
+
+    private enum CodingKeys: String, CodingKey { case title, colour, groups }
 }
 
 /// flotilla's windows and groups as targets. A window is a stored target, found like a browser
@@ -40,17 +50,22 @@ public enum Flotilla {
     }
 
     /// The manifest's windows in flotilla's config order; none when the file is missing,
-    /// unreadable, undecodable or another version. An empty title or group name can't be told
-    /// apart from its absence in an id, so it is left out.
+    /// unreadable, undecodable or another version. A window that doesn't decode is left out, not
+    /// the whole manifest. An empty title or group name can't be told apart from its absence in
+    /// an id, so it is left out too.
     public static func load(from file: URL) -> [FlotillaWindow] {
+        struct Entry: Decodable {
+            var window: FlotillaWindow?
+            init(from decoder: Decoder) throws { window = try? FlotillaWindow(from: decoder) }
+        }
         struct Manifest: Decodable {
             var version: Int
-            var windows: [FlotillaWindow]
+            var windows: [Entry]
         }
         guard let data = try? Data(contentsOf: file),
               let manifest = try? JSONDecoder().decode(Manifest.self, from: data),
               manifest.version == manifestVersion else { return [] }
-        return manifest.windows.filter { !$0.title.isEmpty }.map { window in
+        return manifest.windows.compactMap(\.window).filter { !$0.title.isEmpty }.map { window in
             var w = window
             w.groups.removeAll(where: \.isEmpty)
             return w
@@ -96,10 +111,11 @@ public enum Flotilla {
     }
 
     /// The URL that hands `link` to flotilla, aimed at the window and group the target names;
-    /// nil for plain `flotilla|`, which takes the link as it is.
+    /// nil for plain `flotilla|` and for an id naming no window (a group means nothing without
+    /// one), which take the link as it is.
     static func openURL(_ link: URL, target: Target) -> String? {
         let (window, group) = parse(target.id)
-        guard window != nil || group != nil else { return nil }
+        guard window != nil else { return nil }
         let query = [("window", window), ("group", group), ("url", link.absoluteString)]
             .compactMap { key, value in value.map { "\(key)=\(encode($0))" } }
         return "flotilla://open?" + query.joined(separator: "&")

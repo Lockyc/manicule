@@ -54,6 +54,16 @@ final class FlotillaTests: XCTestCase {
         XCTAssertEqual(Flotilla.load(from: file), [], "a window without a title")
     }
 
+    func testOneOddWindowDoesNotHideTheRest() throws {
+        let home = try makeHome()
+        try write(#"{"version":1,"windows":[{"title":"A"},{"colour":null,"groups":["x"]},{"title":"B","groups":["g"]}]}"#,
+                  home: home)
+        XCTAssertEqual(Flotilla.load(from: Flotilla.manifest(home: home)), [
+            FlotillaWindow(title: "A", colour: nil, groups: []),
+            FlotillaWindow(title: "B", colour: nil, groups: ["g"]),
+        ])
+    }
+
     func testIdsRoundTripTitlesWithPipesAndSpaces() {
         let window = "Work | Home 100%"
         let group = "a|b c/d?"

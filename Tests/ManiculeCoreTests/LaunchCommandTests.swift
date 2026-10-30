@@ -66,6 +66,12 @@ final class LaunchCommandTests: XCTestCase {
                        ["-b", "au.lsjc.flotilla", "flotilla://open?window=A%26B&url=https%3A%2F%2Fexample.com%2F"])
     }
 
+    func testFlotillaIdNamingNoWindowGetsThePlainLink() {
+        let malformed = Target(id: "flotilla|%ZZ|g", browser: .flotilla, profile: nil, name: "n", email: nil)
+        XCTAssertEqual(Launch.command(for: URL(string: "https://example.com/")!, target: malformed, installedWebApps: []).arguments,
+                       ["-b", "au.lsjc.flotilla", "https://example.com/"])
+    }
+
     func testWebAppCommand() {
         XCTAssertEqual(Launch.webAppCommand(app: .docs, target: target(.chrome, "Profile 3")).arguments,
             ["-na", "Google Chrome", "--args", "--profile-directory=Profile 3", "--app-id=" + docsID])
