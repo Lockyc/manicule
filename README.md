@@ -13,8 +13,9 @@ instead of rules having to be written up front. The name is the printer's pointi
 
 ## Status
 
-Early (0.x): routing, the icon-strip picker, the ☞ menu-bar menu, Settings, the Velja import
-and the per-profile web-app launchers (`~/Applications/Manicule Launchers/`). What's next:
+Early (0.x): routing, the icon-strip picker, flotilla's windows and groups as targets, the ☞
+menu-bar menu, Settings, the Velja import, the per-profile web-app launchers
+(`~/Applications/Manicule Launchers/`) and in-app updates. What's next:
 [docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
 
 ## Install
