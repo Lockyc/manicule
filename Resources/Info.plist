@@ -15,6 +15,7 @@
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>SUFeedURL</key><string>https://github.com/lockyc/manicule/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key><string>ix+ClRSmFy9qD3SaTD60iOtw2RmwVKoOB4JoCGfBVP4=</string>
     <key>SUEnableAutomaticChecks</key><true/>
     <key>SUScheduledCheckInterval</key><integer>86400</integer>
     <key>CFBundleURLTypes</key>
