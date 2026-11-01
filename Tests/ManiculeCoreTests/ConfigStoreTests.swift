@@ -92,7 +92,7 @@ final class ConfigStoreTests: XCTestCase {
 
     func testRecordPickSetsLastChoiceAndRemembersDocument() {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://Docs.Google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: false)
+        c.recordPick(link("https://Docs.Google.com/document/d/\(doc)/edit"), target: "chrome|Default", named: "Chrome", always: false)
         XCTAssertEqual(c.lastChoiceByHost["docs.google.com"], "chrome|Default")
         XCTAssertEqual(c.rememberedDocuments[doc], "chrome|Default")
         XCTAssertTrue(c.rules.isEmpty)
@@ -100,21 +100,22 @@ final class ConfigStoreTests: XCTestCase {
 
     func testRecordPickAlwaysAppendsHostRule() {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://example.test/x"), target: "safari|", always: true)
+        c.recordPick(link("https://example.test/x"), target: "safari|", named: "Safari", always: true)
         XCTAssertEqual(c.rules.count, 1)
         XCTAssertEqual(c.rules[0].matchers, [.hostSuffix("example.test")])
         XCTAssertEqual(c.rules[0].target, "safari|")
+        XCTAssertEqual(c.rules[0].title, "example.test → Safari")
     }
 
     func testRecordPickOnNonGoogleURLRemembersNoDocument() {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://example.test/d/abc"), target: "safari|", always: false)
+        c.recordPick(link("https://example.test/d/abc"), target: "safari|", named: "Safari", always: false)
         XCTAssertTrue(c.rememberedDocuments.isEmpty)
     }
 
     func testHostlessURLSetsNoLastChoiceNorRule() {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("file:///tmp/a.html"), target: "safari|", always: true)
+        c.recordPick(link("file:///tmp/a.html"), target: "safari|", named: "Safari", always: true)
         XCTAssertTrue(c.lastChoiceByHost.isEmpty)
         XCTAssertTrue(c.rules.isEmpty)
     }
@@ -175,7 +176,7 @@ final class ConfigStoreTests: XCTestCase {
 
     func testRoundTrip() throws {
         var c = Config.defaults(from: discovered)
-        c.recordPick(link("https://docs.google.com/document/d/\(doc)/edit"), target: "chrome|Default", always: true)
+        c.recordPick(link("https://docs.google.com/document/d/\(doc)/edit"), target: "chrome|Default", named: "Chrome", always: true)
         c.recordOutcome(link("https://example.test/"), target: "safari|")
         let store = ConfigStore(directory: dir)
         _ = store.load(discovered: discovered)

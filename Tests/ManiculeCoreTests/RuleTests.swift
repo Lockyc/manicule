@@ -73,9 +73,9 @@ final class RuleTests: XCTestCase {
     }
 
     func testAlwaysStripsWWW() {
-        let r = Rule.always(host: "www.example.test", target: "chrome|Profile 3")
+        let r = Rule.always(host: "www.example.test", target: "chrome|Profile 3", name: "Chrome · Work")
         XCTAssertEqual(r.matchers, [.hostSuffix("example.test")])
-        XCTAssertEqual(r.title, "www.example.test → chrome|Profile 3")
+        XCTAssertEqual(r.title, "www.example.test → Chrome · Work")
         XCTAssertEqual(r.target, "chrome|Profile 3")
     }
 

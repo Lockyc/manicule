@@ -174,12 +174,13 @@ extension Config {
         visible = orderedTargets.map(\.id).filter(shown.contains)
     }
 
-    /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule.
-    public mutating func recordPick(_ link: IncomingLink, target: Target.ID, always: Bool) {
+    /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule
+    /// titled with the target's `name`.
+    public mutating func recordPick(_ link: IncomingLink, target: Target.ID, named name: String, always: Bool) {
         let host = link.url.host?.lowercased()
         if let host, !host.isEmpty {
             lastChoiceByHost[host] = target
-            if always { rules.append(.always(host: host, target: target)) }
+            if always { rules.append(.always(host: host, target: target, name: name)) }
         }
         if let fileID = GoogleLink(url: link.url)?.fileID {
             rememberedDocuments[fileID] = target

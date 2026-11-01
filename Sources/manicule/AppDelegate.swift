@@ -97,12 +97,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch action {
         case .open(let id, let always):
             // Launch first: recording saves the config, which the link shouldn't wait on.
-            if let target = model.routerState.target(id) {
+            let state = model.routerState
+            if let target = state.target(id) {
                 open(link, in: target)
             } else {
                 Self.log.error("picked target \(id, privacy: .public) can't open on this Mac")
             }
-            model.config.recordPick(link, target: id, always: always)
+            model.config.recordPick(link, target: id, named: model.targetName(id, in: state), always: always)
             model.config.recordOutcome(link, target: id)
         case .copy(let url):
             NSPasteboard.general.clearContents()

@@ -120,10 +120,10 @@ public struct Rule: Codable, Hashable, Identifiable, Sendable {
         return matchers.allSatisfy { $0.matches(url) }
     }
 
-    /// The picker's ⌥⏎: always open this host (and its subdomains) in `target`.
-    public static func always(host: String, target: String) -> Rule {
+    /// The picker's ⌥⏎: always open this host (and its subdomains) in `target`, titled with its `name`.
+    public static func always(host: String, target: String, name: String) -> Rule {
         let bare = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        return Rule(title: "\(host) → \(target)", matchers: [.hostSuffix(bare)], target: target)
+        return Rule(title: "\(host) → \(name)", matchers: [.hostSuffix(bare)], target: target)
     }
 
     /// A rule added in Settings: one empty condition, off until the user fills it in and turns it on.
