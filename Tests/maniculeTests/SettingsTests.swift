@@ -31,7 +31,6 @@ final class SettingsTests: XCTestCase {
     private func seededModel(installed: Set<Browser> = [.safari]) throws -> AppModel {
         var config = Config.defaults(from: ProfileDiscovery.discoverAll(home: home, installed: []))
         config.rules = [Rule(title: "Example", matchers: [.hostSuffix("example.com")], target: "safari|")]
-        config.rememberedDocuments = ["abc123": "safari|"]
         let seeding = ConfigStore(directory: dir)
         _ = seeding.load(discovered: [])
         try seeding.save(config)
@@ -47,7 +46,7 @@ final class SettingsTests: XCTestCase {
     }
 
     /// The rule picker offers flotilla's live groups, read from its manifest on every routing; a
-    /// rule or remembered document naming a gone group shows that group's "(closed)" name.
+    /// rule naming a gone group shows that group's "(closed)" name.
     func testRulePickerOffersGroupsAndNamesGoneOnes() throws {
         try writeFlotillaManifest(groups: ["Bulletins"])
         let model = try seededModel(installed: [.safari, .flotilla])
@@ -63,8 +62,7 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(model.targetName("safari|", in: state), "Safari")
         XCTAssertEqual(model.targetName("chrome|Profile 9", in: state), "Missing target (chrome|Profile 9)")
         model.config.rules[0].target = gone
-        model.config.rememberedDocuments["abc123"] = gone
-        for view in [AnyView(RulesTab(model: model)), AnyView(DocumentsTab(model: model))] {
+        for view in [AnyView(RulesTab(model: model))] {
             let hosting = NSHostingView(rootView: AnyView(view.frame(width: 700, height: 480)))
             hosting.frame = NSRect(x: 0, y: 0, width: 700, height: 480)
             hosting.layoutSubtreeIfNeeded()
@@ -133,8 +131,6 @@ final class SettingsTests: XCTestCase {
         model.config.rules[0].matchers.append(Matcher(kind: .pathContains, value: "/u/1/"))
         XCTAssertEqual(try savedConfig().rules[0].title, "Edited")
         XCTAssertEqual(try savedConfig().rules[0].matchers, [.hostSuffix("example.com"), .pathContains("/u/1/")])
-        model.config.rememberedDocuments.removeAll()
-        XCTAssertEqual(try savedConfig().rememberedDocuments, [:])
     }
 
     func testUnreadableBrowserListedUntilReadableThenMergedHidden() throws {
@@ -212,11 +208,10 @@ final class SettingsTests: XCTestCase {
         }
         for _ in 0..<2 {
             for view in [AnyView(TargetsTab(model: model)), AnyView(RulesTab(model: model)),
-                         AnyView(DocumentsTab(model: model)), AnyView(GeneralTab(model: model))] {
+                         AnyView(GeneralTab(model: model))] {
                 XCTAssertGreaterThan(host(view).fittingSize.height, 0)
             }
             model.config.rules = []
-            model.config.rememberedDocuments = [:]
         }
     }
 

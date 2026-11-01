@@ -12,8 +12,7 @@ Deliberately deferred work. Remove an entry when it ships.
 - **Account check for Google links.** Ask Google which signed-in account can open a shared file,
   so a new shared doc routes without the picker. Deferred: Manicule does not sign in to Google
   for now. Unlock: revisit it; candidate routes are borrowing existing `gcloud` sign-ins or a
-  dedicated OAuth client. It slots in as a routing step between "Remembered document" and
-  "Picker".
+  dedicated OAuth client. It slots in as a routing step between "Rules" and "Picker".
 - **Source-app-only rules.** "Every link from this app → this target" can't be written: a rule
   needs a condition with a value, and Velja rules with only a source app are skipped on import.
   Deferred: a rule without a URL condition opens every link from that app unseen, so it should be
@@ -43,6 +42,6 @@ Deliberately deferred work. Remove an entry when it ships.
   for a curated handful (nine have number keys), with the rest under ⋯. Unlock: someone showing that many — cap the
   width and scroll, or wrap to a second row.
 - **Renamed flotilla windows and groups.** Renaming a flotilla window or group makes Manicule see
-  a new one, so a rule or remembered document naming the old name falls back to the picker
+  a new one, so a rule naming the old name falls back to the picker
   (window) or to flotilla's Incoming (group). Deferred: flotilla identifies windows by title
   only. Unlock: a stable window and group id in flotilla's config, published in `windows.json`.

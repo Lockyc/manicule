@@ -8,11 +8,11 @@ final class RouterTests: XCTestCase {
     let saf = Target(id: "safari|", browser: .safari, profile: nil, name: "Safari", email: nil)
     let doc = "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
 
-    func state(rules: [Rule] = [], remembered: [String: String] = [:], last: [String: String] = [:],
+    func state(rules: [Rule] = [], lastDoc: [String: String] = [:], last: [String: String] = [:],
                visible: [String]? = nil, available: Set<String>? = nil) -> RouterState {
         let targets = [def, p3, ff, saf]
         return RouterState(targets: targets, visible: visible ?? targets.map(\.id), rules: rules,
-                           rememberedDocuments: remembered, lastChoiceByHost: last,
+                           lastChoiceByDocument: lastDoc, lastChoiceByHost: last,
                            available: available ?? Set(targets.map(\.id)))
     }
 
@@ -39,17 +39,18 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(Router.decide(link("https://example.com/"), state: state(rules: [r2, r1])), .open(saf, .rule(r2.id)))
     }
 
-    func testRuleBeatsRememberedDocument() {
+    func testRuleBeatsLastChoiceForDocument() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: saf.id)
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(rules: [r], remembered: [doc: def.id]))
+                              state: state(rules: [r], lastDoc: [doc: def.id]))
         XCTAssertEqual(d, .open(saf, .rule(r.id)))
     }
 
-    func testRememberedDocumentOpens() {
+    /// A document's last choice never opens it unseen; it outranks the host's last choice.
+    func testLastChoiceForDocumentIsPreselected() {
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(remembered: [doc: def.id]))
-        XCTAssertEqual(d, .open(def, .rememberedDocument))
+                              state: state(lastDoc: [doc: ff.id], last: ["docs.google.com": saf.id]))
+        XCTAssertEqual(d, .pick(preselected: ff.id))
     }
 
     func testPickPreselectsLastChoiceForHost() {
@@ -76,7 +77,7 @@ final class RouterTests: XCTestCase {
     func testDanglingTargetsFallThroughToPicker() {
         let r = Rule(title: "a", matchers: [.hostSuffix("google.com")], target: "chrome|Gone")
         let d = Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                              state: state(rules: [r], remembered: [doc: "chrome|Gone"],
+                              state: state(rules: [r], lastDoc: [doc: "chrome|Gone"],
                                            last: ["docs.google.com": "chrome|Gone"]))
         XCTAssertEqual(d, .pick(preselected: def.id))
     }
@@ -91,7 +92,7 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(Router.decide(link("https://example.com/"), state: state(rules: [r], available: gone)),
                        .pick(preselected: def.id))
         XCTAssertEqual(Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"),
-                                     state: state(remembered: [doc: p3.id], available: gone)),
+                                     state: state(lastDoc: [doc: p3.id], available: gone)),
                        .pick(preselected: def.id))
         XCTAssertEqual(Router.decide(link("https://example.com/"),
                                      state: state(last: ["example.com": p3.id], visible: [p3.id, ff.id], available: gone)),

@@ -50,10 +50,9 @@ Evaluated in order; the first that resolves wins.
 2. **Rules** — URL matchers (host, path, query, contains, regex; all must hold) plus an optional
    source app → target. Ordered, first match wins, opens immediately. `⌥⏎` in the picker creates
    a host-suffix rule.
-3. **Remembered document** — a Google file ID the user has picked a profile for before.
-4. **Picker** — icon strip under the cursor: the **pinned** targets grouped by browser, then a
+3. **Picker** — icon strip under the cursor: the **pinned** targets grouped by browser, then a
    ⋯ tile whose menu holds the other available targets. Pre-selected on the last target chosen
-   for the host (⋯ when that target is unpinned).
+   for the Google file ID, else for the host (⋯ when that target is unpinned).
 
 Only **available** targets count: found by this run's discovery, or in a browser whose profile
 file can't be read yet. Any other target is dangling in every step and left out of the picker;
@@ -76,11 +75,10 @@ A Google file opens in the profile's web app when installed there:
 
 ## Conventions
 
-- The app opens without the picker only on an email in the URL, a user-made rule, or the user's
-  own earlier pick for that exact document. A remembered host choice pre-selects; it never
-  auto-opens.
+- The app opens without the picker only on an email in the URL or a user-made rule. A last
+  choice (per document or per host) pre-selects; it never auto-opens.
 - Opening a link leaves the URL untouched; only Copy strips tracking parameters.
-- No personal data in tracked code: targets, names, rules, remembered documents and history live
+- No personal data in tracked code: targets, names, rules, last choices and history live
   in runtime config under Application Support, discovered from the browsers' own profile files.
 - Chrome's shared web-app shims are never touched; generated per-profile launchers live in
   `~/Applications/Manicule Launchers/`.

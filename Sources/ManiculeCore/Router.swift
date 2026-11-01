@@ -21,19 +21,19 @@ public struct RouterState: Sendable {
     public var targets: [Target]
     public var visible: [Target.ID]
     public var rules: [Rule]
-    public var rememberedDocuments: [String: Target.ID]
+    public var lastChoiceByDocument: [String: Target.ID]
     public var lastChoiceByHost: [String: Target.ID]
     /// Targets that can open on this Mac now (see `Config.available`); every other target is
     /// treated as dangling.
     public var available: Set<Target.ID>
 
     public init(targets: [Target], visible: [Target.ID], rules: [Rule],
-                rememberedDocuments: [String: Target.ID], lastChoiceByHost: [String: Target.ID],
+                lastChoiceByDocument: [String: Target.ID], lastChoiceByHost: [String: Target.ID],
                 available: Set<Target.ID>) {
         self.targets = targets
         self.visible = visible
         self.rules = rules
-        self.rememberedDocuments = rememberedDocuments
+        self.lastChoiceByDocument = lastChoiceByDocument
         self.lastChoiceByHost = lastChoiceByHost
         self.available = available
     }
@@ -65,7 +65,7 @@ public struct RouterState: Sendable {
 }
 
 public enum Reason: Equatable, Sendable {
-    case accountEmail, rule(UUID), rememberedDocument
+    case accountEmail, rule(UUID)
 }
 
 public enum Decision: Equatable, Sendable {
@@ -74,8 +74,9 @@ public enum Decision: Equatable, Sendable {
 }
 
 public enum Router {
-    /// Account email, then rules, then remembered document, then the picker. A step naming a
-    /// target that no longer exists, or isn't available, falls through rather than opening it.
+    /// Account email, then rules, then the picker — preselecting the last choice for the Google
+    /// document, else for the host. A step naming a target that no longer exists, or isn't
+    /// available, falls through rather than opening it.
     public static func decide(_ link: IncomingLink, state: RouterState) -> Decision {
         let google = GoogleLink(url: link.url)
 
@@ -88,8 +89,8 @@ public enum Router {
             if let t = state.target(rule.target) { return .open(t, .rule(rule.id)) }
         }
 
-        if let fileID = google?.fileID, let t = state.target(state.rememberedDocuments[fileID]) {
-            return .open(t, .rememberedDocument)
+        if let fileID = google?.fileID, let last = state.target(state.lastChoiceByDocument[fileID]) {
+            return .pick(preselected: last.id)
         }
 
         let host = link.url.host?.lowercased().nilIfEmpty

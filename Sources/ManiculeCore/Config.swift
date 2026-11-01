@@ -25,19 +25,19 @@ public struct Config: Codable, Equatable, Sendable {
     /// Every browser exactly once; the order of the picker's groups and Settings' sections.
     public var browserOrder: [Browser]
     public var rules: [Rule]
-    public var rememberedDocuments: [String: Target.ID]
+    public var lastChoiceByDocument: [String: Target.ID]
     public var lastChoiceByHost: [String: Target.ID]
     public var history: [HistoryEntry]
 
     /// A `browserOrder` that is missing browsers is completed by `completedBrowserOrder`.
     public init(targets: [Target], visible: [Target.ID], browserOrder: [Browser] = [], rules: [Rule] = [],
-                rememberedDocuments: [String: Target.ID] = [:],
+                lastChoiceByDocument: [String: Target.ID] = [:],
                 lastChoiceByHost: [String: Target.ID] = [:], history: [HistoryEntry] = []) {
         self.targets = targets
         self.visible = visible
         self.browserOrder = Self.completedBrowserOrder(browserOrder, targets: targets)
         self.rules = rules
-        self.rememberedDocuments = rememberedDocuments
+        self.lastChoiceByDocument = lastChoiceByDocument
         self.lastChoiceByHost = lastChoiceByHost
         self.history = history
     }
@@ -54,7 +54,7 @@ public struct Config: Codable, Equatable, Sendable {
                   visible: try c.decodeIfPresent([Target.ID].self, forKey: .visible) ?? targets.map(\.id),
                   browserOrder: order.compactMap(Browser.init(rawValue:)),
                   rules: try c.decodeIfPresent([Rule].self, forKey: .rules) ?? [],
-                  rememberedDocuments: try c.decodeIfPresent([String: Target.ID].self, forKey: .rememberedDocuments) ?? [:],
+                  lastChoiceByDocument: try c.decodeIfPresent([String: Target.ID].self, forKey: .lastChoiceByDocument) ?? [:],
                   lastChoiceByHost: try c.decodeIfPresent([String: Target.ID].self, forKey: .lastChoiceByHost) ?? [:],
                   history: try c.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? [])
     }
@@ -93,7 +93,7 @@ public struct Config: Codable, Equatable, Sendable {
         let afterFlotilla = ordered.lastIndex { $0.browser == .flotilla }.map { $0 + 1 } ?? ordered.endIndex
         ordered.insert(contentsOf: groups, at: afterFlotilla)
         return RouterState(targets: ordered, visible: visible, rules: rules,
-                           rememberedDocuments: rememberedDocuments, lastChoiceByHost: lastChoiceByHost,
+                           lastChoiceByDocument: lastChoiceByDocument, lastChoiceByHost: lastChoiceByHost,
                            available: available.union(groups.map(\.id)))
     }
 
@@ -174,7 +174,7 @@ extension Config {
         visible = orderedTargets.map(\.id).filter(shown.contains)
     }
 
-    /// Learns from a deliberate pick: last choice for the host, the document, and optionally an always-rule
+    /// Learns from a deliberate pick: last choice for the host and the Google document, and optionally an always-rule
     /// titled with the target's `name`.
     public mutating func recordPick(_ link: IncomingLink, target: Target.ID, named name: String, always: Bool) {
         let host = link.url.host?.lowercased()
@@ -183,7 +183,7 @@ extension Config {
             if always { rules.append(.always(host: host, target: target, name: name)) }
         }
         if let fileID = GoogleLink(url: link.url)?.fileID {
-            rememberedDocuments[fileID] = target
+            lastChoiceByDocument[fileID] = target
         }
     }
 

@@ -42,7 +42,6 @@ struct SettingsView: View {
         TabView {
             TargetsTab(model: model).tabItem { Label("Targets", systemImage: "person.2") }
             RulesTab(model: model).tabItem { Label("Rules", systemImage: "arrow.triangle.branch") }
-            DocumentsTab(model: model).tabItem { Label("Documents", systemImage: "doc") }
             GeneralTab(model: model).tabItem { Label("General", systemImage: "gearshape") }
         }
         .padding()
@@ -292,47 +291,6 @@ struct RunningApp {
                 return RunningApp(name: app.localizedName ?? id, bundleID: id)
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-}
-
-// MARK: - Documents
-
-struct DocumentsTab: View {
-    @Bindable var model: AppModel
-
-    var body: some View {
-        // Read once per render: it loads flotilla's manifest from disk.
-        let state = model.routerState
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Google files you picked a target for open there again without the picker.")
-                .foregroundStyle(.secondary)
-            List {
-                ForEach(model.config.rememberedDocuments.keys.sorted(), id: \.self) { fileID in
-                    HStack {
-                        Text(fileID).font(.body.monospaced()).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
-                        Spacer()
-                        let target = model.config.rememberedDocuments[fileID] ?? ""
-                        Text(model.targetName(target, in: state))
-                        Button(role: .destructive) { model.config.rememberedDocuments[fileID] = nil } label: {
-                            Label("Forget", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-            .overlay {
-                if model.config.rememberedDocuments.isEmpty {
-                    EmptyNote(text: "No remembered documents. Picking a target for a Google Docs, Sheets, Slides or Drive link adds it here.")
-                }
-            }
-            HStack {
-                Spacer()
-                if model.config.rememberedDocuments.isEmpty {
-                    Text("Nothing to clear.").foregroundStyle(.secondary)
-                }
-                Button("Clear All", role: .destructive) { model.config.rememberedDocuments.removeAll() }
-                    .disabled(model.config.rememberedDocuments.isEmpty)
-            }
-        }
     }
 }
 

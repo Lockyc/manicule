@@ -90,11 +90,11 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(Config.defaults(from: two).targets.map(\.name), ["Firefox · one", "Firefox · two"])
     }
 
-    func testRecordPickSetsLastChoiceAndRemembersDocument() {
+    func testRecordPickSetsLastChoiceForHostAndDocument() {
         var c = Config.defaults(from: discovered)
         c.recordPick(link("https://Docs.Google.com/document/d/\(doc)/edit"), target: "chrome|Default", named: "Chrome", always: false)
         XCTAssertEqual(c.lastChoiceByHost["docs.google.com"], "chrome|Default")
-        XCTAssertEqual(c.rememberedDocuments[doc], "chrome|Default")
+        XCTAssertEqual(c.lastChoiceByDocument[doc], "chrome|Default")
         XCTAssertTrue(c.rules.isEmpty)
     }
 
@@ -107,10 +107,10 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(c.rules[0].title, "example.test → Safari")
     }
 
-    func testRecordPickOnNonGoogleURLRemembersNoDocument() {
+    func testRecordPickOnNonGoogleURLSetsNoDocumentChoice() {
         var c = Config.defaults(from: discovered)
         c.recordPick(link("https://example.test/d/abc"), target: "safari|", named: "Safari", always: false)
-        XCTAssertTrue(c.rememberedDocuments.isEmpty)
+        XCTAssertTrue(c.lastChoiceByDocument.isEmpty)
     }
 
     func testHostlessURLSetsNoLastChoiceNorRule() {
@@ -205,7 +205,7 @@ final class ConfigStoreTests: XCTestCase {
         XCTAssertEqual(c.visible, ["chrome|Default"])
         XCTAssertEqual(c.rules, [Rule(id: UUID(uuidString: rule)!, title: "r", matchers: [.hostSuffix("example.test")],
                                       sourceApp: nil, target: "safari|", isEnabled: true)])
-        XCTAssertEqual(c.rememberedDocuments, [:])
+        XCTAssertEqual(c.lastChoiceByDocument, [:])
         XCTAssertEqual(c.lastChoiceByHost, ["example.test": "safari|"])
         XCTAssertEqual(c.history, [])
     }

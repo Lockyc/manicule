@@ -161,16 +161,15 @@ final class FlotillaTests: XCTestCase {
         XCTAssertFalse(without.targets.contains(groups[1]))
     }
 
-    func testRememberedGoneGroupStillRoutesToFlotilla() {
-        let doc = "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
+    func testRuleToGoneGroupStillRoutesToFlotilla() {
         let gone = Flotilla.groupID(window: "Rotary Club", group: "Minutes")
         var c = pinnedConfig()
-        c.rememberedDocuments[doc] = gone
+        c.rules = [Rule(title: "m", matchers: [.hostSuffix("example.com")], target: gone)]
         let state = c.routerState(available: Set(c.targets.map(\.id)), flotillaGroups: Flotilla.groupTargets(windows))
         let closed = Target(id: gone, browser: .flotilla, profile: nil,
                             name: "flotilla · Rotary Club ▸ Minutes (closed)", email: nil)
-        XCTAssertEqual(Router.decide(link("https://docs.google.com/document/d/\(doc)/edit"), state: state),
-                       .open(closed, .rememberedDocument))
+        XCTAssertEqual(Router.decide(link("https://example.com/"), state: state),
+                       .open(closed, .rule(c.rules[0].id)))
         XCTAssertNil(state.target(Flotilla.windowID("Gone")), "a gone window is not synthesized")
     }
 

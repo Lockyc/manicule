@@ -77,7 +77,7 @@ final class AppModel {
                            flotillaGroups: Flotilla.groupTargets(Flotilla.load(from: Flotilla.manifest(home: home))))
     }
 
-    /// What Settings calls a target a rule or remembered document names, in `state` (a view's one
+    /// What Settings calls a target a rule names, in `state` (a view's one
     /// `routerState` read): a gone flotilla group by its "(closed)" name, a stored target by its
     /// own even when it isn't on this Mac.
     func targetName(_ id: Target.ID, in state: RouterState) -> String {
