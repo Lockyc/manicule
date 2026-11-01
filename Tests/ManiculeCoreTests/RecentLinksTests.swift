@@ -8,30 +8,37 @@ final class RecentLinksTests: XCTestCase {
         HistoryEntry(url: URL(string: s)!, sourceApp: nil, target: target, at: Date(timeIntervalSince1970: t))
     }
 
+    /// Names a target as the app does: known ids by name, any other as missing.
+    private func items(_ config: Config) -> [RecentItem] {
+        RecentItem.items(from: config) { id in config.targets.first { $0.id == id }?.name ?? "Missing target (\(id))" }
+    }
+
     func testNewestFirstWithTargetNames() {
         let config = Config(targets: [work], visible: [work.id], history: [
             entry("https://a.example.com/x", target: work.id, at: 1),
             entry("https://b.example.com/y?q=1", target: nil, at: 2),
         ])
-        let items = RecentItem.items(from: config)
+        let items = items(config)
         XCTAssertEqual(items.map(\.title), ["b.example.com — Copied or cancelled", "a.example.com — Chrome · Work"])
         XCTAssertEqual(items[0].tooltip, "https://b.example.com/y?q=1")
     }
 
     func testCapsAtTwentyKeepingNewest() {
         let history = (0..<30).map { entry("https://h\($0).com/", target: nil, at: TimeInterval($0)) }
-        let items = RecentItem.items(from: Config(targets: [], visible: [], history: history))
+        let items = items(Config(targets: [], visible: [], history: history))
         XCTAssertEqual(items.count, 20)
         XCTAssertEqual(items.first?.entry.url.host, "h29.com")
         XCTAssertEqual(items.last?.entry.url.host, "h10.com")
     }
 
     func testEmptyHistoryHasNoItems() {
-        XCTAssertTrue(RecentItem.items(from: Config(targets: [], visible: [])).isEmpty)
+        XCTAssertTrue(items(Config(targets: [], visible: [])).isEmpty)
     }
 
-    func testUnknownTargetIdFallsBackToUnresolvedName() {
+    /// A link opened in a target the config doesn't store (a flotilla group, a removed target) was
+    /// still opened: it takes the resolver's name, never "Copied or cancelled".
+    func testAnOpenedLinkIsNamedByTheResolverEvenWhenNotStored() {
         let config = Config(targets: [], visible: [], history: [entry("https://a.com/", target: "gone", at: 1)])
-        XCTAssertEqual(RecentItem.items(from: config).first?.title, "a.com — Copied or cancelled")
+        XCTAssertEqual(items(config).first?.title, "a.com — Missing target (gone)")
     }
 }

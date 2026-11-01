@@ -9,11 +9,12 @@ public struct RecentItem: Equatable, Sendable {
     public let tooltip: String
     public let entry: HistoryEntry
 
-    /// Newest first, at most `limit`; history is stored oldest first.
-    public static func items(from config: Config) -> [RecentItem] {
+    /// Newest first, at most `limit`; history is stored oldest first. A link that was opened is titled
+    /// with `name` of its target (a flotilla group or a gone target included); only one never opened
+    /// says `unresolvedTargetName`.
+    public static func items(from config: Config, name: (Target.ID) -> String) -> [RecentItem] {
         config.history.suffix(limit).reversed().map { entry in
-            let targetName = entry.target.flatMap { id in config.targets.first { $0.id == id }?.name }
-                ?? unresolvedTargetName
+            let targetName = entry.target.map(name) ?? unresolvedTargetName
             let host = entry.url.host ?? entry.url.absoluteString
             return RecentItem(title: "\(host) — \(targetName)", tooltip: entry.url.absoluteString, entry: entry)
         }

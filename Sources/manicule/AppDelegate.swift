@@ -25,7 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = MainMenu.make()
         updater = Updater.make()
         statusItem = StatusItemController(
-            recent: { [unowned self] in RecentItem.items(from: model.config) },
+            recent: { [unowned self] in
+                let state = model.routerState
+                return RecentItem.items(from: model.config) { model.targetName($0, in: state) }
+            },
             openAgain: { [unowned self] entry in
                 receive(IncomingLink(url: entry.url, sourceApp: entry.sourceApp, receivedAt: Date()))
             },
