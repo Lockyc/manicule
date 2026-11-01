@@ -15,6 +15,13 @@ final class RuleTests: XCTestCase {
         XCTAssertFalse(m.matches(url("https://notexample.test/a")))
     }
 
+    func testAnEnabledRuleWhoseConditionWasClearedNeverMatches() {
+        let u = url("https://example.test/a")
+        XCTAssertFalse(rule([.regex("")]).matches(url: u, sourceApp: nil))
+        XCTAssertFalse(rule([.urlContains("")]).matches(url: u, sourceApp: nil))
+        XCTAssertFalse(rule([.hostSuffix("  ")]).matches(url: u, sourceApp: nil))
+    }
+
     func testRuleWithoutConditionsNeverMatches() {
         XCTAssertFalse(rule([]).matches(url: url("https://example.test/"), sourceApp: nil))
         XCTAssertFalse(rule([], sourceApp: "com.example.Mail").matches(url: url("https://example.test/"),
