@@ -1,6 +1,7 @@
 import AppKit
 import ManiculeCore
 import os
+import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -12,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var queue = LinkQueue()
     private var statusItem: StatusItemController?
     private var settings: SettingsWindowController?
+    private var updater: SPUStandardUpdaterController?
 
     override init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -21,12 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
+        updater = Updater.make()
         statusItem = StatusItemController(
             recent: { [unowned self] in RecentItem.items(from: model.config) },
             openAgain: { [unowned self] entry in
                 receive(IncomingLink(url: entry.url, sourceApp: entry.sourceApp, receivedAt: Date()))
             },
-            showSettings: { [unowned self] in showSettings() })
+            showSettings: { [unowned self] in showSettings() },
+            updater: updater)
         // After launch completes, so the pictures' file reads don't hold it up.
         DispatchQueue.main.async { [unowned self] in ProfileIcon.prewarm(model.routerState.pickerTargets) }
     }

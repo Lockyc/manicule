@@ -17,7 +17,7 @@ logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
 not just browsers; flotilla (a document workspace) is found only when installed, with its windows
 as profiles and its groups as unstored targets under ⋯, read from its manifest on every link
-(`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL). The `Browser` enum names every target kind. One Swift package, no Xcode project, no third-party dependencies.
+(`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL). The `Browser` enum names every target kind. One Swift package, no Xcode project; Sparkle (the executable's in-app updates) is the one third-party dependency.
 
 **What's next:** `docs/FOLLOWUPS.md` — deliberately deferred work.
 
@@ -30,6 +30,7 @@ justfile                 # recipes: `just` lists them
 Sources/ManiculeCore/    # all logic — unit-tested
 Sources/manicule/        # the AppKit shell (executable): menu bar, picker panel, Settings
 Resources/Info.plist     # bundle template; `just bundle` fills its version (from VERSION)
+install.sh               # curl-pipeable installer: latest release, team ID + notarization checked
 Resources/AppIcon.svg    # app icon source; `just icon` regenerates the tracked AppIcon.icns
 Tests/ManiculeCoreTests/ # unit tests for ManiculeCore
 Tests/maniculeTests/     # the shell
@@ -91,9 +92,13 @@ A Google file opens in the profile's web app when installed there:
 
 `main` + `dev`. All work commits to `dev` and is pushed immediately; `main` advances only by a
 fast-forward to `dev` at release. `VERSION` is the single version source; tags are
-`v<VERSION>`, each with a GitHub release carrying notes. Cutting a release: bump `VERSION`,
-curate `README.md`, tag, publish. `just bundle` signs `.build/Manicule.app` with the identity
-named by `APPLE_SIGNING_IDENTITY`, else ad-hoc.
+`v<VERSION>`, each with a GitHub release carrying notes, `Manicule.zip` and the Sparkle
+`appcast.xml` that `SUFeedURL` reads. Cutting a release: bump `VERSION` and curate `README.md` on
+`dev`; the signed build, tag and publish are the fleet's `lockstep.sh release manicule`. The
+release interface: `just gate`, `VERSION`, `just bundle` (signs `.build/Manicule.app` with
+`APPLE_SIGNING_IDENTITY`, hardened runtime, nested Sparkle helpers first; ad-hoc without it), the
+`app` and `info_plist` variables, `just sparkle-bin`. `install.sh` installs the latest release;
+`.claude/commands/manicule/install.md` drives it.
 
 ## Build & test
 

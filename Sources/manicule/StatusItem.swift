@@ -1,5 +1,6 @@
 import AppKit
 import ManiculeCore
+import Sparkle
 
 /// The menu bar item. Rebuilds its menu each time it opens so Recent is current.
 @MainActor
@@ -8,12 +9,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let recent: () -> [RecentItem]
     private let openAgain: (HistoryEntry) -> Void
     private let showSettings: () -> Void
+    private let updater: SPUStandardUpdaterController?
 
     init(recent: @escaping () -> [RecentItem], openAgain: @escaping (HistoryEntry) -> Void,
-         showSettings: @escaping () -> Void) {
+         showSettings: @escaping () -> Void, updater: SPUStandardUpdaterController?) {
         self.recent = recent
         self.openAgain = openAgain
         self.showSettings = showSettings
+        self.updater = updater
         super.init()
         item.button?.image = MenuBarIcon.image()
         let menu = NSMenu()
@@ -47,6 +50,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(recentItem)
         menu.addItem(.separator())
         menu.addItem(action("Settings…", key: ",") { [weak self] in self?.showSettings() })
+        let check = action("Check for Updates…") { [weak self] in self?.updater?.checkForUpdates(nil) }
+        if updater == nil {
+            check.action = nil  // a nil action is what disables an item in an auto-enabling menu
+            check.toolTip = "Only the installed Manicule.app updates itself"
+        }
+        menu.addItem(check)
         menu.addItem(NSMenuItem(title: "Quit Manicule", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 

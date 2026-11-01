@@ -19,8 +19,22 @@ and the per-profile web-app launchers (`~/Applications/Manicule Launchers/`). Wh
 
 ## Install
 
-Build from source with `just install`, which installs `/Applications/Manicule.app` and registers
-it with Launch Services. Needs macOS 14+ and the Swift 6 toolchain.
+```bash
+curl -fsSL https://raw.githubusercontent.com/lockyc/manicule/main/install.sh | bash
+```
+
+Needs macOS 14 or later. The installer downloads the latest release, checks that it is signed by
+Manicule's developer and notarized by Apple, installs `/Applications/Manicule.app`, registers it
+with Launch Services and launches it. After that Manicule updates itself: it checks daily, and
+**Check for Updates…** in the ☞ menu checks now. From a clone of this repo, Claude Code's
+`/manicule:install` runs the same install.
+
+To build from source instead (needs Xcode's Swift 6 toolchain and
+[`just`](https://github.com/casey/just)):
+
+```bash
+just install    # builds, installs /Applications/Manicule.app, registers it and launches it
+```
 
 ## First run
 
