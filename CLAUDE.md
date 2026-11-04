@@ -94,7 +94,7 @@ fast-forward to `dev` at release. `VERSION` is the single version source; tags a
 `appcast.xml` that `SUFeedURL` reads. Cutting a release: bump `VERSION` and curate `README.md` on
 `dev`; the signed build, tag and publish are the fleet's `lockstep.sh release manicule`. The
 release interface: `just gate`, `VERSION`, `just bundle` (signs `.build/Manicule.app` with
-`APPLE_SIGNING_IDENTITY`, hardened runtime, nested Sparkle helpers first; ad-hoc without it), the
+`APPLE_SIGNING_IDENTITY`, hardened runtime, nested Sparkle helpers first; else the keychain's Developer ID, else ad-hoc), the
 `app` and `info_plist` variables, `just sparkle-bin`. `install.sh` installs the latest release;
 `.claude/commands/manicule/install.md` drives it.
 
