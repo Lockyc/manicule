@@ -88,7 +88,7 @@ final class PickerPanelTests: XCTestCase {
 
     /// flotilla's section lists its windows, then their groups, each by its short name.
     func testMenuListsFlotillaWindowsThenGroups() throws {
-        let window = FlotillaWindow(title: "Rotary", colour: "#17458f", groups: ["Bulletins"])
+        let window = FlotillaWindow(title: "Club", colour: "#17458f", groups: ["Bulletins"])
         var config = Config.defaults(from: [
             DiscoveredProfile(browser: .flotilla, directory: "", name: "flotilla", email: nil, installedWebApps: []),
             DiscoveredProfile(window: window),
@@ -102,9 +102,9 @@ final class PickerPanelTests: XCTestCase {
         picker.panel.firstResponder?.keyDown(with: key("0", 29))
         let menu = try XCTUnwrap(menus().first?.menu)
         XCTAssertEqual(menu.items.filter { !$0.isAlternate }.map(\.title),
-                       ["flotilla", "flotilla", "Rotary", "Rotary ▸ Bulletins"])
-        menu.performActionForItem(at: menu.items.firstIndex { $0.title == "Rotary ▸ Bulletins" }!)
-        XCTAssertEqual(actions(), [.open("flotilla|Rotary|Bulletins", always: false)])
+                       ["flotilla", "flotilla", "Club", "Club ▸ Bulletins"])
+        menu.performActionForItem(at: menu.items.firstIndex { $0.title == "Club ▸ Bulletins" }!)
+        XCTAssertEqual(actions(), [.open("flotilla|Club|Bulletins", always: false)])
     }
 
     func testOptionChoosingFromTheMenuOpensAlways() throws {

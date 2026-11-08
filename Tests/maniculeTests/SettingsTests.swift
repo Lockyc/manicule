@@ -41,7 +41,7 @@ final class SettingsTests: XCTestCase {
         let file = Flotilla.manifest(home: home)
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         let list = groups.map { "\"\($0)\"" }.joined(separator: ",")
-        try ##"{"version":1,"windows":[{"title":"Rotary","colour":"#17458f","groups":[\##(list)]}]}"##
+        try ##"{"version":1,"windows":[{"title":"Club","colour":"#17458f","groups":[\##(list)]}]}"##
             .write(to: file, atomically: true, encoding: .utf8)
     }
 
@@ -51,14 +51,14 @@ final class SettingsTests: XCTestCase {
         try writeFlotillaManifest(groups: ["Bulletins"])
         let model = try seededModel(installed: [.safari, .flotilla])
         XCTAssertEqual(RulesTab.choices(model.routerState).filter { $0.browser == .flotilla }.map(\.name),
-                       ["flotilla", "flotilla · Rotary", "flotilla · Rotary ▸ Bulletins"])
+                       ["flotilla", "flotilla · Club", "flotilla · Club ▸ Bulletins"])
 
         try writeFlotillaManifest(groups: ["Bulletins", "Minutes"])
-        XCTAssertTrue(RulesTab.choices(model.routerState).contains { $0.id == "flotilla|Rotary|Minutes" }, "read per routing, no reload")
+        XCTAssertTrue(RulesTab.choices(model.routerState).contains { $0.id == "flotilla|Club|Minutes" }, "read per routing, no reload")
 
-        let gone = Flotilla.groupID(window: "Rotary", group: "Agenda")
+        let gone = Flotilla.groupID(window: "Club", group: "Agenda")
         let state = model.routerState
-        XCTAssertEqual(model.targetName(gone, in: state), "flotilla · Rotary ▸ Agenda (closed)")
+        XCTAssertEqual(model.targetName(gone, in: state), "flotilla · Club ▸ Agenda (closed)")
         XCTAssertEqual(model.targetName("safari|", in: state), "Safari")
         XCTAssertEqual(model.targetName("chrome|Profile 9", in: state), "Missing target (chrome|Profile 9)")
         model.config.rules[0].target = gone

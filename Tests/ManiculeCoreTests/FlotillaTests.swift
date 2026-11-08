@@ -18,12 +18,12 @@ final class FlotillaTests: XCTestCase {
 
     private let manifest = """
     {"version":1,"windows":[
-      {"title":"Rotary Club","colour":"#17458f","groups":["Rotary (interim)","Bulletins"]},
+      {"title":"Book Club","colour":"#17458f","groups":["Club (interim)","Bulletins"]},
       {"title":"Work|Home","colour":null,"groups":[]}]}
     """
 
     private let windows = [
-        FlotillaWindow(title: "Rotary Club", colour: "#17458f", groups: ["Rotary (interim)", "Bulletins"]),
+        FlotillaWindow(title: "Book Club", colour: "#17458f", groups: ["Club (interim)", "Bulletins"]),
         FlotillaWindow(title: "Work|Home", colour: nil, groups: []),
     ]
 
@@ -78,20 +78,20 @@ final class FlotillaTests: XCTestCase {
 
     func testGroupTargetsCarryTheirWindowsColour() {
         let groups = Flotilla.groupTargets(windows)
-        XCTAssertEqual(groups.map(\.id), [Flotilla.groupID(window: "Rotary Club", group: "Rotary (interim)"),
-                                          Flotilla.groupID(window: "Rotary Club", group: "Bulletins")])
-        XCTAssertEqual(groups.map(\.name), ["flotilla · Rotary Club ▸ Rotary (interim)",
-                                            "flotilla · Rotary Club ▸ Bulletins"])
+        XCTAssertEqual(groups.map(\.id), [Flotilla.groupID(window: "Book Club", group: "Club (interim)"),
+                                          Flotilla.groupID(window: "Book Club", group: "Bulletins")])
+        XCTAssertEqual(groups.map(\.name), ["flotilla · Book Club ▸ Club (interim)",
+                                            "flotilla · Book Club ▸ Bulletins"])
         XCTAssertEqual(groups.map(\.colour), ["#17458f", "#17458f"])
         XCTAssertEqual(groups.map(\.browser), [.flotilla, .flotilla])
     }
 
     func testGroupTargetsKeepTheFirstOfARepeatedName() {
-        let twice = [FlotillaWindow(title: "Rotary", colour: "#17458f", groups: ["Bulletins", "Minutes", "Bulletins"]),
+        let twice = [FlotillaWindow(title: "Club", colour: "#17458f", groups: ["Bulletins", "Minutes", "Bulletins"]),
                      FlotillaWindow(title: "Work", colour: nil, groups: ["Bulletins"])]
         XCTAssertEqual(Flotilla.groupTargets(twice).map(\.id),
-                       [Flotilla.groupID(window: "Rotary", group: "Bulletins"),
-                        Flotilla.groupID(window: "Rotary", group: "Minutes"),
+                       [Flotilla.groupID(window: "Club", group: "Bulletins"),
+                        Flotilla.groupID(window: "Club", group: "Minutes"),
                         Flotilla.groupID(window: "Work", group: "Bulletins")])
     }
 
@@ -107,14 +107,14 @@ final class FlotillaTests: XCTestCase {
     func testWindowsAreDiscoveredAsProfiles() {
         var c = Config.defaults(from: [saf, plain])
         c.merge(discovered: [saf, plain] + windowProfiles())
-        let rotary = Flotilla.windowID("Rotary Club")
+        let club = Flotilla.windowID("Book Club")
         let work = Flotilla.windowID("Work|Home")
-        XCTAssertEqual(c.targets.map(\.id), ["safari|", "flotilla|", rotary, work])
-        XCTAssertEqual(c.targets.map(\.name), ["Safari", "flotilla", "flotilla · Rotary Club", "flotilla · Work|Home"])
+        XCTAssertEqual(c.targets.map(\.id), ["safari|", "flotilla|", club, work])
+        XCTAssertEqual(c.targets.map(\.name), ["Safari", "flotilla", "flotilla · Book Club", "flotilla · Work|Home"])
         XCTAssertEqual(c.targets.map(\.colour), [nil, nil, "#17458f", nil])
         XCTAssertEqual(c.visible, ["safari|", "flotilla|"], "windows found later merge unpinned")
         XCTAssertEqual(c.available(discovered: [saf, plain] + windowProfiles(), unreadable: []),
-                       ["safari|", "flotilla|", rotary, work])
+                       ["safari|", "flotilla|", club, work])
         XCTAssertEqual(c.available(discovered: [saf, plain], unreadable: []), ["safari|", "flotilla|"],
                        "a closed window is not found")
     }
@@ -131,7 +131,7 @@ final class FlotillaTests: XCTestCase {
 
     private func pinnedConfig() -> Config {
         var c = Config.defaults(from: [saf, plain] + windowProfiles())
-        c.visible = ["safari|", "flotilla|", Flotilla.windowID("Rotary Club")]
+        c.visible = ["safari|", "flotilla|", Flotilla.windowID("Book Club")]
         return c
     }
 
@@ -139,7 +139,7 @@ final class FlotillaTests: XCTestCase {
         let c = pinnedConfig()
         let groups = Flotilla.groupTargets(windows)
         let state = c.routerState(available: Set(c.targets.map(\.id)), flotillaGroups: groups)
-        XCTAssertEqual(state.pickerTargets.map(\.id), ["safari|", "flotilla|", Flotilla.windowID("Rotary Club")])
+        XCTAssertEqual(state.pickerTargets.map(\.id), ["safari|", "flotilla|", Flotilla.windowID("Book Club")])
         XCTAssertEqual(state.overflowGroups.map { $0.map(\.id) },
                        [[Flotilla.windowID("Work|Home")] + groups.map(\.id)])
         XCTAssertFalse(state.visible.contains(groups[0].id))
@@ -162,12 +162,12 @@ final class FlotillaTests: XCTestCase {
     }
 
     func testRuleToGoneGroupStillRoutesToFlotilla() {
-        let gone = Flotilla.groupID(window: "Rotary Club", group: "Minutes")
+        let gone = Flotilla.groupID(window: "Book Club", group: "Minutes")
         var c = pinnedConfig()
         c.rules = [Rule(title: "m", matchers: [.hostSuffix("example.com")], target: gone)]
         let state = c.routerState(available: Set(c.targets.map(\.id)), flotillaGroups: Flotilla.groupTargets(windows))
         let closed = Target(id: gone, browser: .flotilla, profile: nil,
-                            name: "flotilla · Rotary Club ▸ Minutes (closed)", email: nil)
+                            name: "flotilla · Book Club ▸ Minutes (closed)", email: nil)
         XCTAssertEqual(Router.decide(link("https://example.com/"), state: state),
                        .open(closed, .rule(c.rules[0].id)))
         XCTAssertNil(state.target(Flotilla.windowID("Gone")), "a gone window is not synthesized")

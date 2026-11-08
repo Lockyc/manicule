@@ -53,11 +53,11 @@ final class LaunchCommandTests: XCTestCase {
 
     func testGroupLinkSurvivesEncoding() {
         let url = URL(string: "https://docs.google.com/document/d/A/edit?usp=sharing&x=1+b#heading=h.1")!
-        let group = Flotilla.groupTargets([FlotillaWindow(title: "Rotary Club", colour: nil, groups: ["Bulletins"])])[0]
+        let group = Flotilla.groupTargets([FlotillaWindow(title: "Book Club", colour: nil, groups: ["Bulletins"])])[0]
         XCTAssertEqual(Launch.command(for: url, target: group, installedWebApps: []), LaunchCommand(
             executable: "/usr/bin/open",
             arguments: ["-b", "au.lsjc.flotilla",
-                        "flotilla://open?window=Rotary%20Club&group=Bulletins&url=https%3A%2F%2Fdocs.google.com%2Fdocument%2Fd%2FA%2Fedit%3Fusp%3Dsharing%26x%3D1%2Bb%23heading%3Dh.1"]))
+                        "flotilla://open?window=Book%20Club&group=Bulletins&url=https%3A%2F%2Fdocs.google.com%2Fdocument%2Fd%2FA%2Fedit%3Fusp%3Dsharing%26x%3D1%2Bb%23heading%3Dh.1"]))
     }
 
     func testFlotillaWindowGetsNoGroup() {

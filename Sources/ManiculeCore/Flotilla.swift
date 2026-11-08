@@ -30,7 +30,7 @@ public struct FlotillaWindow: Decodable, Equatable, Sendable {
 /// title can't split it.
 public enum Flotilla {
     static let manifestVersion = 1
-    /// Joins a group to its window in a group target's name ("flotilla · Rotary ▸ Bulletins").
+    /// Joins a group to its window in a group target's name ("flotilla · Club ▸ Bulletins").
     static let groupSeparator = " ▸ "
     /// Ends the name of a remembered group that flotilla no longer has.
     static let closedSuffix = " (closed)"
