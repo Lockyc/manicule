@@ -27,8 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/lockyc/manicule/main/install.sh | b
 Needs macOS 14 or later. The installer downloads the latest release, checks that it is signed by
 Manicule's developer and notarized by Apple, installs `/Applications/Manicule.app`, registers it
 with Launch Services and launches it. After that Manicule updates itself: it checks daily, and
-**Check for Updates…** in the ☞ menu checks now. From a clone of this repo, Claude Code's
-`/manicule:install` runs the same install.
+**Check for Updates…** in the ☞ menu checks now.
 
 To build from source instead (needs Xcode's Swift 6 toolchain and
 [`just`](https://github.com/casey/just)):
