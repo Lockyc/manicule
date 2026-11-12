@@ -130,7 +130,7 @@ struct TargetsTab: View {
             Image(nsImage: ProfileIcon.image(for: target))
                 .resizable().frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 2) {
-                TextField("Name", text: name(target.id))
+                NameField(name: name(target.id))
                 Text(Self.detail(target, found: model.available.contains(target.id)))
                     .font(.caption).foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -153,6 +153,27 @@ struct TargetsTab: View {
         if let profile = target.profile { parts.append("Folder: \(profile)") }
         if !found { parts.append("Not found on this Mac") }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// A target's name, stored on Return or when the field loses focus rather than per keystroke: a
+/// rename rewrites and re-signs that profile's launchers.
+struct NameField: View {
+    @Binding var name: String
+    @State private var draft = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField("Name", text: $draft)
+            .focused($focused)
+            .onSubmit(commit)
+            .onChange(of: focused) { _, isFocused in if !isFocused { commit() } }
+            .onChange(of: name, initial: true) { _, stored in if !focused { draft = stored } }
+            .onDisappear(perform: commit)
+    }
+
+    private func commit() {
+        if draft != name { name = draft }
     }
 }
 
