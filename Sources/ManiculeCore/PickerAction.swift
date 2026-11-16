@@ -7,9 +7,8 @@ public enum PickerAction: Equatable, Sendable {
     case cancel
 }
 
-/// The picker UI: `strip` is the pinned targets and `more` the ⋯ menu, each one group per
-/// browser (`RouterState.pickerGroups`, `.overflowGroups`). Calls `completion` exactly once, on
-/// the main thread.
+/// The picker UI: `strip` is the tiles and `more` the ⋯ menu, as `Router.pickerLayout` lays them
+/// out. Calls `completion` exactly once, on the main thread.
 public protocol Picking: AnyObject {
     func show(_ link: IncomingLink, strip: [[Target]], more: [[Target]], preselected: Target.ID?,
               completion: @escaping (PickerAction) -> Void)

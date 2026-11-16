@@ -87,8 +87,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func present(_ link: IncomingLink, preselected: Target.ID?) {
-        let state = model.routerState
-        picker.show(link, strip: state.pickerGroups, more: state.overflowGroups, preselected: preselected) { [weak self] action in
+        let layout = Router.pickerLayout(link, state: model.routerState)
+        picker.show(link, strip: layout.strip, more: layout.more, preselected: preselected) { [weak self] action in
             self?.finish(link, action)
         }
     }

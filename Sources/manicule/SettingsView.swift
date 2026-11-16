@@ -127,6 +127,8 @@ struct TargetsTab: View {
                 get: { model.config.visible.contains(target.id) },
                 set: { model.config.setVisible(target.id, $0) }))
                 .toggleStyle(.checkbox)
+                .disabled(target.browser == .cooee)
+                .help(target.browser == .cooee ? "Meet links always show every cooee account" : "")
             Image(nsImage: ProfileIcon.image(for: target))
                 .resizable().frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 2) {
