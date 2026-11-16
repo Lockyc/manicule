@@ -85,6 +85,17 @@ final class RuleTests: XCTestCase {
         XCTAssertFalse(Matcher.hostExact("").matches(u))
     }
 
+    func testCanMatchMeetNeedsEveryHostMatcherToHoldForMeet() {
+        XCTAssertTrue(rule([.hostExact("meet.google.com")]).canMatchMeet)
+        XCTAssertTrue(rule([.hostSuffix("google.com"), .pathContains("/abc")]).canMatchMeet)
+        XCTAssertTrue(rule([.hostSuffix("Meet.Google.com")]).canMatchMeet)
+        XCTAssertFalse(rule([.hostExact("google.com")]).canMatchMeet)
+        XCTAssertFalse(rule([.hostSuffix("example.com")]).canMatchMeet)
+        XCTAssertFalse(rule([.hostSuffix("google.com"), .hostExact("docs.google.com")]).canMatchMeet)
+        XCTAssertFalse(rule([.urlContains("meet")]).canMatchMeet, "no host matcher")
+        XCTAssertFalse(rule([.hostSuffix("")]).canMatchMeet)
+    }
+
     func testCodableRoundTripAllMatcherKinds() throws {
         let r = rule([.hostExact("a.test"), .hostSuffix("b.test"), .pathContains("/p"),
                       .queryContains("q=1"), .urlContains("c"), .regex("^https")],

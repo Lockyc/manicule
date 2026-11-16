@@ -265,7 +265,18 @@ struct RuleRow: View {
                 .fixedSize()
             }
             Picker("Opens in", selection: $rule.target) {
-                ForEach(targets) { Text($0.name).tag($0.id) }
+                if rule.canMatchMeet {
+                    ForEach(targets) { Text($0.name).tag($0.id) }
+                } else {
+                    ForEach(targets.filter { $0.browser != .cooee }) { Text($0.name).tag($0.id) }
+                    let cooee = targets.filter { $0.browser == .cooee }
+                    if !cooee.isEmpty {
+                        // The rule's own cooee target stays selectable, so showing the row changes nothing.
+                        Section("cooee opens only Meet links") {
+                            ForEach(cooee) { Text($0.name).tag($0.id).disabled($0.id != rule.target) }
+                        }
+                    }
+                }
                 if !targets.contains(where: { $0.id == rule.target }) {
                     Text(missingName).tag(rule.target)
                 }
