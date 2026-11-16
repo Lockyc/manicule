@@ -70,14 +70,14 @@ public enum ProfileDiscovery {
         }
     }
 
-    /// The folder holding a browser's profiles; nil for Safari and flotilla, which have no profile folders.
+    /// The folder holding a browser's profiles; nil for Safari, flotilla and cooee, which have no profile folders.
     public static func folder(of browser: Browser, home: URL) -> URL? {
         let sub: String
         switch browser {
         case .chrome: sub = "Google/Chrome"
         case .chromium: sub = "Chromium"
         case .firefox: sub = "Firefox"
-        case .safari, .flotilla: return nil
+        case .safari, .flotilla, .cooee: return nil
         }
         return home.appendingPathComponent("Library/Application Support").appendingPathComponent(sub, isDirectory: true)
     }
@@ -102,7 +102,8 @@ public enum ProfileDiscovery {
     }
 
     /// Every profile in the browsers' profile files, then Safari, then flotilla and its windows
-    /// when `installed` holds it (Safari ships with macOS; flotilla may be absent).
+    /// and cooee and its profiles when `installed` holds them (Safari ships with macOS; the
+    /// others may be absent).
     public static func discoverAll(home: URL, installed: Set<Browser>) -> [DiscoveredProfile] {
         var result: [DiscoveredProfile] = []
         for root in roots(home: home) {
@@ -122,7 +123,7 @@ public enum ProfileDiscovery {
                 if let text = try? String(contentsOf: root.profileFile, encoding: .utf8) {
                     result += firefox(profilesINI: text)
                 }
-            case .safari, .flotilla:
+            case .safari, .flotilla, .cooee:
                 continue
             }
         }
@@ -132,6 +133,11 @@ public enum ProfileDiscovery {
             result.append(DiscoveredProfile(browser: .flotilla, directory: "", name: Browser.flotilla.displayName,
                                             email: nil, installedWebApps: []))
             result += Flotilla.load(from: Flotilla.manifest(home: home)).map(DiscoveredProfile.init(window:))
+        }
+        if installed.contains(.cooee) {
+            result.append(DiscoveredProfile(browser: .cooee, directory: "", name: Browser.cooee.displayName,
+                                            email: nil, installedWebApps: []))
+            result += Cooee.load(from: Cooee.manifest(home: home)).map(DiscoveredProfile.init(cooee:))
         }
         return result
     }

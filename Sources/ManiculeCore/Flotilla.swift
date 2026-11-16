@@ -34,9 +34,6 @@ public enum Flotilla {
     static let groupSeparator = " ▸ "
     /// Ends the name of a remembered group that flotilla no longer has.
     static let closedSuffix = " (closed)"
-    /// The only characters left bare in an id part or a URL value.
-    private static let unreserved = CharacterSet(
-        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
     private static let prefix = "\(Browser.flotilla.rawValue)|"
     /// Plain flotilla, which hands a link to its last focused window.
     static let plainID: Target.ID = prefix
@@ -125,7 +122,7 @@ public enum Flotilla {
     }
 
     static func encode(_ s: String) -> String {
-        s.addingPercentEncoding(withAllowedCharacters: unreserved) ?? s
+        PercentEncoding.encode(s)
     }
 }
 

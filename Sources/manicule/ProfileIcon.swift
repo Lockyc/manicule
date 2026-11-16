@@ -31,7 +31,7 @@ enum ProfileIcon {
         case .chrome, .chromium:
             if let picture = profilePicture(target, home: home) { return picture }
             return initial(target)
-        case .firefox, .safari, .flotilla:
+        case .firefox, .safari, .flotilla, .cooee:
             guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: target.browser.bundleID)
             else { return initial(target) }
             let icon = NSWorkspace.shared.icon(forFile: app.path)

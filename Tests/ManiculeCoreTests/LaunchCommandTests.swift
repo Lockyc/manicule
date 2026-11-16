@@ -51,6 +51,14 @@ final class LaunchCommandTests: XCTestCase {
                                         arguments: ["-b", "au.lsjc.flotilla", "https://drive.google.com/drive/folders/x"]))
     }
 
+    func testCooeeOpensByBundleIDWithJoinURL() {
+        let url = URL(string: "https://meet.google.com/abc-defg-hij")!
+        let t = Target(id: Cooee.profileID("work"), browser: .cooee, profile: nil, name: "x", email: nil)
+        XCTAssertEqual(Launch.command(for: url, target: t, installedWebApps: []),
+                       LaunchCommand(executable: "/usr/bin/open",
+                                     arguments: ["-b", "au.lsjc.cooee", Cooee.joinURL(url, target: t)]))
+    }
+
     func testGroupLinkSurvivesEncoding() {
         let url = URL(string: "https://docs.google.com/document/d/A/edit?usp=sharing&x=1+b#heading=h.1")!
         let group = Flotilla.groupTargets([FlotillaWindow(title: "Book Club", colour: nil, groups: ["Bulletins"])])[0]

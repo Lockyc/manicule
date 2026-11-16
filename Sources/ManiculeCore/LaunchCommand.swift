@@ -31,6 +31,9 @@ public enum Launch {
         case .flotilla:
             return LaunchCommand(executable: open,
                                  arguments: ["-b", target.browser.bundleID, Flotilla.openURL(url, target: target) ?? link])
+        case .cooee:
+            return LaunchCommand(executable: open,
+                                 arguments: ["-b", target.browser.bundleID, Cooee.joinURL(url, target: target)])
         case .firefox:
             var args: [String] = []
             if let profile = target.profile, !profile.isEmpty {

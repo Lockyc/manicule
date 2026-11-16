@@ -20,8 +20,8 @@ final class BrowserOrderTests: XCTestCase {
          "visible":["firefox|"]}
         """
         let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
-        XCTAssertEqual(c.browserOrder, [.firefox, .chrome, .chromium, .safari, .flotilla])
-        XCTAssertEqual(config().browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
+        XCTAssertEqual(c.browserOrder, [.firefox, .chrome, .chromium, .safari, .flotilla, .cooee])
+        XCTAssertEqual(config().browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla, .cooee])
     }
 
     func testStoredBrowserOrderIsCompletedAndUnknownBrowsersDropped() throws {
@@ -30,7 +30,7 @@ final class BrowserOrderTests: XCTestCase {
          "browserOrder":["safari","netscape","safari"]}
         """
         let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
-        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .chromium, .firefox, .flotilla])
+        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .chromium, .firefox, .flotilla, .cooee])
     }
 
     func testBrowserOrderRoundTrips() throws {
@@ -48,12 +48,12 @@ final class BrowserOrderTests: XCTestCase {
     func testMovingABrowserTakesTheDestinationsPlace() {
         var c = config()
         c.moveBrowser(.safari, to: .chrome)
-        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .firefox, .chromium, .flotilla])
+        XCTAssertEqual(c.browserOrder, [.safari, .chrome, .firefox, .chromium, .flotilla, .cooee])
         XCTAssertEqual(c.orderedTargets.map(\.id), ["s", "c1", "c2", "c3", "f1"])
         c.moveBrowser(.safari, to: .firefox)
-        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
+        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla, .cooee])
         c.moveBrowser(.chrome, to: .chrome)
-        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla])
+        XCTAssertEqual(c.browserOrder, [.chrome, .firefox, .safari, .chromium, .flotilla, .cooee])
     }
 
     func testMovingProfilesStaysWithinTheirBrowser() {

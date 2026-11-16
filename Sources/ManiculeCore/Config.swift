@@ -117,10 +117,11 @@ extension Config {
             case .chrome, .chromium: name = "\(browser)\(separator)\(p.name)"
             case .firefox: name = firefoxCount > 1 ? "\(browser)\(separator)\(p.name)" : browser
             case .flotilla: name = p.directory.isEmpty ? browser : Flotilla.windowName(p.name)
+            case .cooee: name = p.directory.isEmpty ? browser : Cooee.profileDisplayName(p.name)
             case .safari: name = browser
             }
-            // A flotilla window's directory is its encoded title, not a folder.
-            let folder = p.directory.isEmpty || p.browser == .flotilla ? nil : p.directory
+            // A flotilla window's or cooee profile's directory is its encoded name, not a folder.
+            let folder = p.directory.isEmpty || p.browser == .flotilla || p.browser == .cooee ? nil : p.directory
             return Target(id: p.targetID, browser: p.browser, profile: folder, name: name, email: p.email,
                           colour: p.colour)
         }

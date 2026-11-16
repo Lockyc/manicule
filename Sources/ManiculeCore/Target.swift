@@ -2,7 +2,8 @@ import Foundation
 
 public enum Browser: String, Codable, CaseIterable, Sendable {
     /// `flotilla` is a document workspace, not a browser: its windows are its profiles (`Flotilla`).
-    case chrome, chromium, firefox, safari, flotilla
+    /// `cooee` joins Google Meet calls in per-account profiles (`Cooee`).
+    case chrome, chromium, firefox, safari, flotilla, cooee
 
     public var displayName: String {
         switch self {
@@ -11,6 +12,7 @@ public enum Browser: String, Codable, CaseIterable, Sendable {
         case .firefox: "Firefox"
         case .safari: "Safari"
         case .flotilla: "flotilla"
+        case .cooee: "cooee"
         }
     }
 
@@ -21,6 +23,7 @@ public enum Browser: String, Codable, CaseIterable, Sendable {
         case .firefox: "org.mozilla.firefox"
         case .safari: "com.apple.Safari"
         case .flotilla: "au.lsjc.flotilla"
+        case .cooee: "au.lsjc.cooee"
         }
     }
 }
