@@ -64,6 +64,7 @@ final class CooeeTests: XCTestCase {
     func testIsMeet() {
         XCTAssertTrue(Cooee.isMeet(URL(string: "https://meet.google.com/abc")!))
         XCTAssertTrue(Cooee.isMeet(URL(string: "https://MEET.google.com/abc")!))
+        XCTAssertFalse(Cooee.isMeet(URL(string: "http://meet.google.com/abc")!))
         XCTAssertFalse(Cooee.isMeet(URL(string: "https://docs.google.com/abc")!))
         XCTAssertFalse(Cooee.isMeet(URL(string: "https://meet.google.com.evil.example/abc")!))
     }

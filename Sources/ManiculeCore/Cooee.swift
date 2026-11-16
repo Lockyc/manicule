@@ -71,9 +71,9 @@ public enum Cooee {
         return "cooee://join?" + query.joined(separator: "&")
     }
 
-    /// Whether `url` is a Google Meet link.
+    /// Whether `url` is an https Google Meet link, the only kind cooee opens.
     public static func isMeet(_ url: URL) -> Bool {
-        url.host?.lowercased() == meetHost
+        url.scheme?.lowercased() == "https" && url.host?.lowercased() == meetHost
     }
 }
 
