@@ -124,8 +124,8 @@ struct TargetsTab: View {
     private func row(_ target: Target) -> some View {
         HStack(spacing: 10) {
             Toggle("Pinned", isOn: Binding(
-                get: { model.config.visible.contains(target.id) },
-                set: { model.config.setVisible(target.id, $0) }))
+                get: { target.browser == .cooee || model.config.visible.contains(target.id) },
+                set: { if target.browser != .cooee { model.config.setVisible(target.id, $0) } }))
                 .toggleStyle(.checkbox)
                 .disabled(target.browser == .cooee)
                 .help(target.browser == .cooee ? "Meet links always show every cooee account" : "")

@@ -44,8 +44,8 @@ Click ☞ in the menu bar and open Settings.
   links when it's installed, each of its profiles a target.
 - **Meet links** open in the cooee profile signed into the link's account; otherwise the picker
   shows every cooee profile. Other links never open in cooee.
-- **The picker** opens under the cursor with your pinned targets, the one you last picked for the
-  link's host selected.
+- **The picker** opens under the cursor with your pinned targets, preselecting your last pick for
+  the document or host when it is shown, otherwise the first tile.
 
   | Key | Action |
   |---|---|
