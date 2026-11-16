@@ -40,7 +40,10 @@ Click ☞ in the menu bar and open Settings.
 - **Targets** — Chrome, Chromium, Firefox and Safari, each profile its own target, and
   [flotilla](https://github.com/lockyc/flotilla) when it's installed: its windows are its
   profiles, each tile in its window's colour, and its open groups are listed under ⋯ and in a
-  rule's **Opens in**.
+  rule's **Opens in**. [cooee](https://github.com/lockyc/cooee) is the target for Google Meet
+  links when it's installed, each of its profiles a target.
+- **Meet links** open in the cooee profile signed into the link's account; otherwise the picker
+  shows every cooee profile. Other links never open in cooee.
 - **The picker** opens under the cursor with your pinned targets, the one you last picked for the
   link's host selected.
 
@@ -68,7 +71,8 @@ In use, `0.x`. What's next: [docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
 
 ## Related
 
-[flotilla](https://github.com/lockyc/flotilla), a workspace for documents, is a Manicule target.
+[flotilla](https://github.com/lockyc/flotilla), a workspace for documents, and
+[cooee](https://github.com/lockyc/cooee), Google Meet in per-account profiles, are Manicule targets.
 
 ## Development
 

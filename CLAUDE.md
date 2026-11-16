@@ -17,7 +17,9 @@ logged and dropped. Targets are browser **profiles**
 (Chrome and Chromium from `Local State`, Firefox from `profiles.ini`, Safari as one target),
 not just browsers; flotilla (a document workspace) is found only when installed, with its windows
 as profiles and its groups as unstored targets under ⋯, read from its manifest on every link
-(`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL). The `Browser` enum names every target kind. One Swift package, no Xcode project; Sparkle (the executable's in-app updates) is the one third-party dependency.
+(`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL); cooee
+(Google Meet calls in per-account profiles) is found the same way, its profiles stored targets
+read from its `profiles.json` and opened with `cooee://join` (`Cooee`). The `Browser` enum names every target kind. One Swift package, no Xcode project; Sparkle (the executable's in-app updates) is the one third-party dependency.
 
 **What's next:** `docs/FOLLOWUPS.md` — deliberately deferred work.
 
@@ -52,7 +54,14 @@ Evaluated in order; the first that resolves wins.
    a host-suffix rule.
 3. **Picker** — icon strip under the cursor: the **pinned** targets grouped by browser, then a
    ⋯ tile whose menu holds the other available targets. Pre-selected on the last target chosen
-   for the Google file ID, else for the host (⋯ when that target is unpinned).
+   for the Google file ID, else for the host (⋯ when that target is unpinned), else the first
+   tile; a last choice the link's picker doesn't show is ignored (`Router.pickerLayout`).
+
+A **Meet link** (`meet.google.com`) while cooee is available: step 1 matches cooee profiles only,
+so a Chrome profile in the same account is passed over; rules apply as usual; the strip is every
+cooee profile (plain cooee when it has none) and ⋯ holds everything else. Any other link never
+opens in cooee: cooee targets are skipped in step 1, in rules and in the picker. Without cooee,
+Meet links route like any other.
 
 Only **available** targets count: found by this run's discovery, or in a browser whose profile
 file can't be read yet. Any other target is dangling in every step and left out of the picker;
@@ -77,6 +86,9 @@ A Google file opens in the profile's web app when installed there:
 
 - The app opens without the picker only on an email in the URL or a user-made rule. A last
   choice (per document or per host) pre-selects; it never auto-opens.
+- Pinning doesn't apply to cooee: its profiles are always the Meet strip, so Settings disables
+  their Pinned toggle, and a rule's **Opens in** offers cooee only when the rule can match Meet
+  (`Rule.canMatchMeet`).
 - Opening a link leaves the URL untouched; only Copy strips tracking parameters.
 - No personal data in tracked code: targets, names, rules, last choices and history live
   in runtime config under Application Support, discovered from the browsers' own profile files.
