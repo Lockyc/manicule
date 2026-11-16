@@ -92,7 +92,9 @@ final class RuleTests: XCTestCase {
         XCTAssertFalse(rule([.hostExact("google.com")]).canMatchMeet)
         XCTAssertFalse(rule([.hostSuffix("example.com")]).canMatchMeet)
         XCTAssertFalse(rule([.hostSuffix("google.com"), .hostExact("docs.google.com")]).canMatchMeet)
-        XCTAssertFalse(rule([.urlContains("meet")]).canMatchMeet, "no host matcher")
+        XCTAssertTrue(rule([.urlContains("meet")]).canMatchMeet, "no host matcher")
+        XCTAssertTrue(rule([.regex("abc-defg")]).canMatchMeet, "no host matcher")
+        XCTAssertTrue(rule([], sourceApp: "com.example.Mail").canMatchMeet, "source app only")
         XCTAssertFalse(rule([.hostSuffix("")]).canMatchMeet)
     }
 

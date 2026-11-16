@@ -131,12 +131,11 @@ public struct Rule: Codable, Hashable, Identifiable, Sendable {
         Rule(title: "New rule", matchers: [.hostSuffix("")], target: target, isEnabled: false)
     }
 
-    /// Whether the rule can fire for a Google Meet link, and so may open in cooee: it has a host
-    /// condition and every host condition holds for the Meet host.
+    /// Whether the rule can fire for a Google Meet link, and so may open in cooee: every host
+    /// condition holds for the Meet host. A rule without one can match any host.
     public var canMatchMeet: Bool {
         let meet = URL(string: "https://\(Cooee.meetHost)/")!
-        let hosts = matchers.filter { $0.kind == .hostExact || $0.kind == .hostSuffix }
-        return !hosts.isEmpty && hosts.allSatisfy { $0.matches(meet) }
+        return matchers.filter { $0.kind == .hostExact || $0.kind == .hostSuffix }.allSatisfy { $0.matches(meet) }
     }
 
     /// At least one condition has a value; only then can the rule be turned on.
