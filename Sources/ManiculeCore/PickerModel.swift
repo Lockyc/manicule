@@ -25,9 +25,9 @@ public enum PickerStep: Equatable, Sendable {
 /// The picker's state and key handling, independent of any window.
 public struct PickerModel: Sendable {
     public let link: IncomingLink
-    /// Pinned targets, one group per browser.
+    /// The tiles, one group per browser, as `Router.pickerLayout` lays them out.
     public let strip: [[Target]]
-    /// Available targets that aren't pinned, one group per browser: the ⋯ menu.
+    /// The ⋯ menu, one group per browser, as `Router.pickerLayout` lays it out.
     public let more: [[Target]]
     /// The preselection when it is in the menu rather than the strip.
     public let moreHighlight: Target.ID?

@@ -34,8 +34,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             showSettings: { [unowned self] in showSettings() },
             updater: updater)
-        // After launch completes, so the pictures' file reads don't hold it up.
-        DispatchQueue.main.async { [unowned self] in ProfileIcon.prewarm(model.routerState.pickerTargets) }
+        // After launch completes, so the pictures' file reads don't hold it up. cooee targets are
+        // on a Meet link's strip whether pinned or not.
+        DispatchQueue.main.async { [unowned self] in
+            let state = model.routerState
+            let cooee = state.targets.filter { $0.browser == .cooee && state.available.contains($0.id) }
+            ProfileIcon.prewarm(state.pickerTargets + cooee)
+        }
     }
 
     func showSettings() {
