@@ -126,10 +126,10 @@ final class RouterTests: XCTestCase {
     let meetWork = "https://meet.google.com/abc-defg-hij?authuser=me%40work.example"
     let docsWork = "https://docs.google.com/document/d/1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789/edit?authuser=me%40work.example"
 
-    func meetState(_ targets: [Target]? = nil, rules: [Rule] = []) -> RouterState {
+    func meetState(_ targets: [Target]? = nil, rules: [Rule] = [], last: [String: String] = [:]) -> RouterState {
         let targets = targets ?? [chromeWork, chromeHome, safari, cooeePlain, cooeeWork, cooeeHome]
         return RouterState(targets: targets, visible: [chromeWork.id, safari.id], rules: rules,
-                           lastChoiceByDocument: [:], lastChoiceByHost: [:],
+                           lastChoiceByDocument: [:], lastChoiceByHost: last,
                            available: Set(targets.map(\.id)))
     }
 
@@ -140,11 +140,30 @@ final class RouterTests: XCTestCase {
     /// A Chrome profile in the same account is not a Meet target while cooee is available.
     func testMeetEmailMatchingOnlyChromeAsks() {
         let s = meetState([chromeWork, chromeHome, safari, cooeePlain, cooeeHome])
-        XCTAssertEqual(Router.decide(link(meetWork), state: s), .pick(preselected: chromeWork.id))
+        XCTAssertEqual(Router.decide(link(meetWork), state: s), .pick(preselected: cooeeHome.id))
     }
 
     func testMeetWithoutEmailAsks() {
-        XCTAssertEqual(Router.decide(meetLink, state: meetState()), .pick(preselected: chromeWork.id))
+        XCTAssertEqual(Router.decide(meetLink, state: meetState()), .pick(preselected: cooeeWork.id))
+    }
+
+    func testMeetPreselectsFirstCooeeAccount() {
+        XCTAssertEqual(Router.decide(meetLink, state: meetState()), .pick(preselected: cooeeWork.id))
+        let plainOnly = meetState([chromeWork, chromeHome, safari, cooeePlain])
+        XCTAssertEqual(Router.decide(meetLink, state: plainOnly), .pick(preselected: cooeePlain.id))
+    }
+
+    /// A last choice under ⋯ in the Meet layout still wins over the first cooee account.
+    func testMeetKeepsLastChoiceForHost() {
+        let s = meetState(last: ["meet.google.com": chromeHome.id])
+        XCTAssertEqual(Router.decide(meetLink, state: s), .pick(preselected: chromeHome.id))
+    }
+
+    func testNonMeetNeverPreselectsCooee() {
+        var s = meetState([cooeeWork, cooeePlain, cooeeHome, chromeWork, chromeHome, safari],
+                          last: ["example.com": cooeeWork.id])
+        s.visible.insert(cooeeHome.id, at: 0)
+        XCTAssertEqual(Router.decide(link("https://example.com/"), state: s), .pick(preselected: chromeWork.id))
     }
 
     func testMeetRuleStillWins() {

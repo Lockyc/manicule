@@ -75,8 +75,9 @@ public enum Decision: Equatable, Sendable {
 
 public enum Router {
     /// Account email, then rules, then the picker — preselecting the last choice for the Google
-    /// document, else for the host. A step naming a target that no longer exists, or isn't
-    /// available, falls through rather than opening it.
+    /// document, else for the host, else the first tile of the link's `pickerLayout`. A step
+    /// naming a target that no longer exists, or isn't available, falls through rather than
+    /// opening it; a last choice counts only when the link's layout shows it.
     ///
     /// A Meet link's email matches only cooee profiles while cooee is available; any other link's
     /// email matches only non-cooee targets, and a rule naming a cooee target applies to Meet
@@ -97,15 +98,15 @@ public enum Router {
             if let t = state.target(rule.target), meet || t.browser != .cooee { return .open(t, .rule(rule.id)) }
         }
 
-        if let fileID = google?.fileID, let last = state.target(state.lastChoiceByDocument[fileID]) {
-            return .pick(preselected: last.id)
-        }
-
+        let layout = pickerLayout(link, state: state)
+        let shown = Set((layout.strip + layout.more).joined().map(\.id))
         let host = link.url.host?.lowercased().nilIfEmpty
-        if let host, let last = state.target(state.lastChoiceByHost[host]) {
-            return .pick(preselected: last.id)
+        let lastChoices = [google?.fileID.flatMap { state.lastChoiceByDocument[$0] },
+                           host.flatMap { state.lastChoiceByHost[$0] }]
+        if let last = lastChoices.lazy.compactMap({ $0 }).first(where: shown.contains) {
+            return .pick(preselected: last)
         }
-        return .pick(preselected: state.pickerTargets.first?.id)
+        return .pick(preselected: layout.strip.first?.first?.id)
     }
 
     /// The picker's strip and ⋯ menu for `link`. A Meet link with cooee available puts every cooee
