@@ -39,19 +39,27 @@ final class RouterPropertyTests: XCTestCase {
         Matcher(kind: kind, value: value)
     }
 
+    /// Ids a rule may name, cooee's twice, and rules mostly enabled over mostly present and
+    /// available targets: an enabled rule naming a live cooee target for a non-Meet link is the
+    /// case step 2 must refuse, and uniform picks reach it too rarely to fail every run.
+    static let ruleTargets = ids + universe.filter { $0.browser == .cooee }.map(\.id)
+
     static let rule = #gen(matcher.array(length: 0...2),
                            .element(from: ["com.apple.mail", "com.tinyspeck.slackmacgap"]).optional(someWeight: 1, noneWeight: 4),
-                           .element(from: ids), .bool()).map { matchers, app, target, enabled in
+                           .element(from: ruleTargets), .element(from: [true, true, false])).map { matchers, app, target, enabled in
         Rule(title: "r", matchers: matchers, sourceApp: app, target: target, isEnabled: enabled)
     }
 
-    static func subset(_ ids: [String]) -> ReflectiveGenerator<[String]> {
-        #gen(.bool().array(length: ids.count...ids.count)).map { picks in
+    static func subset(_ ids: [String], kept: [Bool] = [true, false]) -> ReflectiveGenerator<[String]> {
+        #gen(.element(from: kept).array(length: ids.count...ids.count)).map { picks in
             zip(ids, picks).filter(\.1).map(\.0)
         }
     }
 
-    static let state = #gen(subset(universe.map(\.id)), subset(universe.map(\.id)), subset(universe.map(\.id)),
+    static let mostly = [true, true, true, false]
+
+    static let state = #gen(subset(universe.map(\.id), kept: mostly), subset(universe.map(\.id)),
+                            subset(universe.map(\.id), kept: mostly),
                             rule.array(length: 0...3), .element(from: ids).optional(), .element(from: ids).optional(),
                             .element(from: hosts)).map { present, visible, available, rules, lastDoc, lastHost, host in
         RouterState(targets: universe.filter { present.contains($0.id) }, visible: visible, rules: rules,
@@ -75,7 +83,7 @@ final class RouterPropertyTests: XCTestCase {
     /// A preselection is a tile the link's own picker shows; an opened target is available (or a
     /// flotilla group while flotilla is), and cooee opens only a Meet link.
     func testDecisionStaysInsideTheLinksPickerAndAvailability() {
-        #exhaust(#gen(Self.state, Self.link), .budget(.thorough)) { state, link in
+        #exhaust(#gen(Self.state, Self.link), .budget(.extensive)) { state, link in
             switch Router.decide(link, state: state) {
             case .pick(preselected: nil):
                 return true
@@ -92,14 +100,14 @@ final class RouterPropertyTests: XCTestCase {
 
     /// A rule with no live condition never matches, whatever the URL and source app.
     func testARuleWithoutAConditionNeverMatches() {
-        #exhaust(#gen(Self.rule, Self.link)) { rule, link in
+        #exhaust(#gen(Self.rule, Self.link), .budget(.extensive)) { rule, link in
             rule.hasCondition || !rule.matches(url: link.url, sourceApp: link.sourceApp)
         }
     }
 
     /// A rule that fires for a Meet link says it can match Meet, so Settings offers it cooee.
     func testARuleMatchingAMeetLinkCanMatchMeet() {
-        #exhaust(#gen(Self.rule, Self.link)) { rule, link in
+        #exhaust(#gen(Self.rule, Self.link), .budget(.extensive)) { rule, link in
             !Cooee.isMeet(link.url) || !rule.matches(url: link.url, sourceApp: link.sourceApp) || rule.canMatchMeet
         }
     }
