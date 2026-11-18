@@ -63,6 +63,39 @@ final class TransformPropertyTests: XCTestCase {
         }
     }
 
+    // MARK: Launchers
+
+    static let launcherTarget = #gen(.element(from: [Browser.chrome, .chromium, .firefox]),
+                                     .element(from: ["Default", "Profile 1", "Profile 2", "Profile 10"]),
+                                     .element(from: ["Chrome · Work", "Chrome · Home", "Chromium · Work", "Work", "work", "Home"]),
+                                     .element(from: [WebApp.docs, .sheets, .slides].map(\.chromeAppID)).set(count: 0...3))
+        .map { browser, dir, name, apps in
+            (Target(id: "\(browser.rawValue)|\(dir)", browser: browser, profile: dir, name: name, email: nil),
+             DiscoveredProfile(browser: browser, directory: dir, name: dir, email: nil, installedWebApps: apps))
+        }
+
+    /// Visible targets with distinct ids (as a config holds them) and the profiles they came from.
+    static let launcherInput = launcherTarget.array(length: 0...6).map { pairs in
+        var seen = Set<Target.ID>()
+        let unique = pairs.filter { seen.insert($0.0.id).inserted }
+        return (unique.map(\.0), unique.map(\.1))
+    }
+
+    /// No two launchers share a bundle id or a name (case-insensitively, as the disk compares
+    /// file names), and each target's launchers read back as that target's browser.
+    func testLaunchersHaveUniqueIdsAndNamesAndReadBackTheirBrowser() {
+        #exhaust(Self.launcherInput, .budget(.thorough)) { visible, profiles in
+            let specs = LauncherSpecs.make(visible: visible, profiles: profiles)
+            return Set(specs.map(\.bundleID)).count == specs.count
+                && Set(specs.map { $0.appName.lowercased() }).count == specs.count
+                && visible.allSatisfy { target in
+                    let own = profiles.filter { $0.targetID == target.id }
+                    return LauncherSpecs.make(visible: visible, profiles: own)
+                        .allSatisfy { LauncherSpecs.browser(fromBundleID: $0.bundleID) == target.browser }
+                }
+        }
+    }
+
     // MARK: Flotilla groups
 
     static let flotillaWindow = #gen(.element(from: ["Club", "club", "A|B", "A", "B", "Cafe", "Café"]),

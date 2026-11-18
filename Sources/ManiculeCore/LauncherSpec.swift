@@ -38,16 +38,28 @@ public enum LauncherSpecs {
     }
 
     /// One launcher per visible Chrome/Chromium target and web app installed in its profile. A
-    /// launcher is named after the target's short name, or its full name when another visible
-    /// target shares that short name.
+    /// launcher is named after the target's short name; its full name when another visible target
+    /// shares that short name; and its full name and profile folder (with the browser when the
+    /// folder is shared too) when another shares the full name. Names compare case-insensitively,
+    /// as launcher file names do on disk.
     public static func make(visible: [Target], profiles: [DiscoveredProfile]) -> [LauncherSpec] {
         var specs: [LauncherSpec] = []
-        let shortNames = Dictionary(grouping: visible, by: \.shortName)
+        let shortNames = Dictionary(grouping: visible, by: { $0.shortName.lowercased() })
+        let fullNames = Dictionary(grouping: visible, by: { $0.name.lowercased() })
         for target in visible where target.browser == .chrome || target.browser == .chromium {
             guard let dir = target.profile,
                   let found = profiles.first(where: { $0.browser == target.browser && $0.directory == dir })
             else { continue }
-            let name = (shortNames[target.shortName]?.count ?? 0) > 1 ? target.name : target.shortName
+            let sameName = fullNames[target.name.lowercased()] ?? []
+            let name: String
+            if (shortNames[target.shortName.lowercased()]?.count ?? 0) < 2 {
+                name = target.shortName
+            } else if sameName.count < 2 {
+                name = target.name
+            } else {
+                let folderShared = sameName.filter { $0.profile == dir }.count > 1
+                name = "\(target.name) (\(folderShared ? "\(target.browser.displayName) \(dir)" : dir))"
+            }
             for app in [WebApp.docs, .sheets, .slides] where found.installedWebApps.contains(app.chromeAppID) {
                 specs.append(LauncherSpec(
                     appName: "\(app.displayName) – \(name)",

@@ -56,6 +56,16 @@ final class LauncherSpecTests: XCTestCase {
                                                "com.lockyc.manicule.launcher.docs.chromium.Default"])
     }
 
+    func testSameFullNameTakesTheProfileFolder() {
+        let specs = LauncherSpecs.make(
+            visible: [target("a", .chrome, "Default", "Chrome · Work"), target("b", .chrome, "Profile 1", "Chrome · Work"),
+                      target("c", .chromium, "Default", "Chrome · work")],
+            profiles: [profile(.chrome, "Default", apps: [docsID]), profile(.chrome, "Profile 1", apps: [docsID]),
+                       profile(.chromium, "Default", apps: [docsID])])
+        XCTAssertEqual(specs.map(\.appName), ["Docs – Chrome · Work (Chrome Default)", "Docs – Chrome · Work (Profile 1)",
+                                              "Docs – Chrome · work (Chromium Default)"])
+    }
+
     func testSharedShortNameCountsOnlyVisibleTargets() {
         let specs = LauncherSpecs.make(
             visible: [target("a", .chrome, "Default", "Chrome · Work"), target("f", .firefox, "x", "Firefox · Home")],
