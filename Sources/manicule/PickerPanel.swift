@@ -24,6 +24,8 @@ final class PickerPanel: NSObject, @MainActor Picking {
     private var shownStrip: [[Target]]?
     private var completion: ((PickerAction) -> Void)?
     private var menuIsOpen = false
+    /// Puts the panel on screen as the key window.
+    var putOnScreen: @MainActor (NSPanel) -> Void = { $0.makeKeyAndOrderFront(nil) }
     /// Pops the ⋯ menu up under `tile`, with `highlighted` placed there; returns once it closes.
     var presentMenu: @MainActor (NSMenu, NSMenuItem?, NSView) -> Void = { menu, highlighted, tile in
         menu.popUp(positioning: highlighted, at: NSPoint(x: 0, y: -4), in: tile)
@@ -120,7 +122,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         let height = Self.headerHeight + 6 + Self.tile + Self.padding * 2
         panel.setFrame(Self.frame(size: NSSize(width: width, height: height), under: NSEvent.mouseLocation),
                        display: false)
-        panel.makeKeyAndOrderFront(nil)
+        putOnScreen(panel)
         panel.makeFirstResponder(content)
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             MainActor.assumeIsolated { self?.finish(.cancel) }
@@ -204,7 +206,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         menuIsOpen = false
         guard completion != nil else { return }
         // Escape or a click away closed the menu: back to the strip, keys and all.
-        panel.makeKeyAndOrderFront(nil)
+        putOnScreen(panel)
         panel.makeFirstResponder(content)
     }
 
