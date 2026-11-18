@@ -218,6 +218,111 @@ final class ConfigStoreTests: XCTestCase {
                                        at: Date(timeIntervalSince1970: 1_767_225_600)))
     }
 
+    /// Every key the encoder writes is dropped in turn. Only identity keys may fail the decode: a
+    /// target's id and browser, a rule's id and target, a matcher's kind and value, and a history
+    /// entry's url and time. Any other drop decodes, changes nothing else, and takes its default.
+    func testEveryNonIdentityKeyCanBeDropped() throws {
+        let rule = Rule(id: UUID(uuidString: "6F1C2A4E-0B8D-4C59-9E43-2D1B7A5F0C11")!, title: "r",
+                        matchers: [.hostSuffix("example.test"), .regex("^https:")], sourceApp: "com.apple.mail",
+                        target: "safari|", isEnabled: false)
+        let full = Config(
+            targets: [Target(id: "chrome|Default", browser: .chrome, profile: "Default", name: "Chrome · Work",
+                             email: "w@example.com", colour: "#336699"),
+                      Target(id: "safari|", browser: .safari, profile: nil, name: "Web", email: nil)],
+            visible: ["safari|"], browserOrder: Browser.allCases.reversed(), rules: [rule],
+            lastChoiceByDocument: [doc: "chrome|Default"], lastChoiceByHost: ["example.test": "safari|"],
+            history: [HistoryEntry(url: URL(string: "https://example.test/a")!, sourceApp: "com.apple.mail",
+                                   target: "safari|", at: Date(timeIntervalSince1970: 1_767_225_600))])
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        func json(_ c: Config) throws -> Any { try JSONSerialization.jsonObject(with: encoder.encode(c)) }
+        let original = try json(full)
+
+        let identity = ["targets/*/id", "targets/*/browser", "rules/*/id", "rules/*/target", "rules/*/matchers/*/",
+                        "history/*/url", "history/*/at"]
+        // The documented default each key takes; a key without an entry is checked only for decoding
+        // and leaving everything else alone.
+        let defaults: [String: (inout Config, Int?) -> Void] = [
+            "targets": { c, _ in c = Config(targets: [], visible: c.visible, browserOrder: c.browserOrder, rules: c.rules,
+                                             lastChoiceByDocument: c.lastChoiceByDocument,
+                                             lastChoiceByHost: c.lastChoiceByHost, history: c.history) },
+            "visible": { c, _ in c.visible = c.targets.map(\.id) },
+            "browserOrder": { c, _ in c.browserOrder = Config.completedBrowserOrder([], targets: c.targets) },
+            "rules": { c, _ in c.rules = [] },
+            "lastChoiceByDocument": { c, _ in c.lastChoiceByDocument = [:] },
+            "lastChoiceByHost": { c, _ in c.lastChoiceByHost = [:] },
+            "history": { c, _ in c.history = [] },
+            "targets/*/name": { c, i in c.targets[i!].name = c.targets[i!].browser.displayName },
+            "targets/*/profile": { c, i in c.targets[i!].profile = nil },
+            "targets/*/email": { c, i in c.targets[i!].email = nil },
+            "targets/*/colour": { c, i in c.targets[i!].colour = nil },
+            "rules/*/title": { c, i in c.rules[i!].title = "" },
+            "rules/*/matchers": { c, i in c.rules[i!].matchers = [] },
+            "rules/*/sourceApp": { c, i in c.rules[i!].sourceApp = nil },
+            "rules/*/isEnabled": { c, i in c.rules[i!].isEnabled = true },
+            "history/*/sourceApp": { c, i in c.history[i!].sourceApp = nil },
+            "history/*/target": { c, i in c.history[i!].target = nil },
+            "lastChoiceByDocument/*": { c, _ in c.lastChoiceByDocument = [:] },
+            "lastChoiceByHost/*": { c, _ in c.lastChoiceByHost = [:] },
+        ]
+
+        let paths = Self.keyPaths(original)
+        XCTAssertGreaterThan(paths.count, 25, "every collection is populated")
+        for path in paths {
+            // Array indices and last-choice map keys are data, not schema: both read as `*`.
+            let pattern = path.enumerated()
+                .map { i, key in Int(key) != nil || (i > 0 && path[0].hasPrefix("lastChoice")) ? "*" : key }
+                .joined(separator: "/")
+            let name = path.joined(separator: "/")
+            let dropped = try JSONSerialization.data(withJSONObject: Self.removing(path[...], from: original))
+            let decoded = try? decoder.decode(Config.self, from: dropped)
+            if identity.contains(where: { $0.hasSuffix("/") ? pattern.hasPrefix($0) : pattern == $0 }) {
+                XCTAssertNil(decoded, "\(name) is an identity key: a config without it must not decode")
+                continue
+            }
+            guard let decoded else {
+                XCTFail("dropping \(name) made the config undecodable: give it a default")
+                continue
+            }
+            let after = Self.removing(path[...], from: try json(decoded)) as? NSObject
+            XCTAssertEqual(after, Self.removing(path[...], from: original) as? NSObject,
+                           "dropping \(name) changed something else")
+            if let apply = defaults[pattern] {
+                var expected = full
+                apply(&expected, path.count > 1 ? Int(path[1]) : nil)
+                XCTAssertEqual(decoded, expected, "dropping \(name) didn't take its default")
+            }
+        }
+    }
+
+    /// Every object key in `json`, as a path of keys and array indices.
+    private static func keyPaths(_ json: Any, prefix: [String] = []) -> [[String]] {
+        if let object = json as? [String: Any] {
+            return object.keys.sorted().flatMap { [prefix + [$0]] + keyPaths(object[$0]!, prefix: prefix + [$0]) }
+        }
+        if let array = json as? [Any] {
+            return array.enumerated().flatMap { keyPaths($1, prefix: prefix + [String($0)]) }
+        }
+        return []
+    }
+
+    private static func removing(_ path: ArraySlice<String>, from json: Any) -> Any {
+        guard let head = path.first else { return json }
+        if var object = json as? [String: Any] {
+            if path.count == 1 { object[head] = nil } else if let child = object[head] {
+                object[head] = removing(path.dropFirst(), from: child)
+            }
+            return object
+        }
+        if var array = json as? [Any], let i = Int(head), array.indices.contains(i) {
+            array[i] = removing(path.dropFirst(), from: array[i])
+            return array
+        }
+        return json
+    }
+
     func testMissingFileGivesDefaults() {
         XCTAssertEqual(ConfigStore(directory: dir).load(discovered: discovered), Config.defaults(from: discovered))
     }
