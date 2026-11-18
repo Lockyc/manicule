@@ -47,7 +47,18 @@ final class TransformPropertyTests: XCTestCase {
                            "u", "0", "edit", "open", "view", "store", "apps", "details", "maps", "place",
                            "1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789", "shortid", "com.example.app", "a%2Fb"]
 
-    static let googleURL = #gen(.element(from: googleHosts), .element(from: segments).array(length: 0...6),
+    /// The id-bearing shapes, with `ID` for the id: random segments alone almost never line one
+    /// up, so a host check could go missing unnoticed.
+    static let shapes = [["document", "d", "ID", "edit"], ["spreadsheets", "d", "ID"], ["file", "d", "ID", "view"],
+                         ["forms", "d", "e", "ID", "viewform"], ["u", "0", "presentation", "d", "ID"],
+                         ["drive", "folders", "ID"], ["drive", "u", "0", "folders", "ID"], ["open"], ["d", "e", "ID"]]
+
+    static let path = #gen(.element(from: shapes), .element(from: ["1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
+                                                                   "1Doc-AbCd_EfGhIjKlMnOpQr", "shortid", "a%2Fb"]),
+                           .element(from: segments).array(length: 0...6), .bool())
+        .map { shape, id, random, shaped in shaped ? shape.map { $0 == "ID" ? id : $0 } : random }
+
+    static let googleURL = #gen(.element(from: googleHosts), path,
                                 .element(from: ["", "?id=1DocAbCdEfGhIjKlMnOpQrStUvWxYz0123456789", "?id=e",
                                                 "?usp=sharing", "?authuser=a%40example.com"]))
         .map { host, path, query in URL(string: "https://\(host)/" + path.joined(separator: "/") + query)! }
