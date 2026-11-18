@@ -5,7 +5,7 @@ import XCTest
 
 /// The picker panel driven with synthetic key events, never put on screen.
 @MainActor
-final class PickerPanelTests: XCTestCase {
+final class PickerPanelTests: FocusGuardedTestCase {
     override func setUp() { _ = NSApplication.shared }
 
     private let targets = [
@@ -275,7 +275,7 @@ final class PickerPanelTests: XCTestCase {
 }
 
 @MainActor
-final class ProfileIconTests: XCTestCase {
+final class ProfileIconTests: FocusGuardedTestCase {
     func testNeighbouringProfileIdsSpreadAcrossTheWheel() {
         let hues = (1...6).map { ProfileIcon.hue("chromium|Profile \($0)") }
         XCTAssertGreaterThan(hues.max()! - hues.min()!, 0.5, "ids differing in one character must not cluster")

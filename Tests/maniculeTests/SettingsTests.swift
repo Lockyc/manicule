@@ -6,7 +6,7 @@ import XCTest
 
 /// Settings and the model behind it, built off-screen against a temp home and config directory.
 @MainActor
-final class SettingsTests: XCTestCase {
+final class SettingsTests: FocusGuardedTestCase {
     private var home: URL!
     private var dir: URL!
     private var lockedFiles: [URL] = []

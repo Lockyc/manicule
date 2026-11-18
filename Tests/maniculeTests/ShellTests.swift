@@ -2,13 +2,13 @@ import XCTest
 import ManiculeCore
 @testable import manicule
 
-final class ShellTests: XCTestCase {
+final class ShellTests: FocusGuardedTestCase {
     func testShellSeesCoreAcrossModuleBoundary() {
         XCTAssertEqual(Manicule.name, "manicule")
     }
 }
 
-final class LauncherTests: XCTestCase {
+final class LauncherTests: FocusGuardedTestCase {
     private let firefox = LaunchCommand(executable: "/Apps/Firefox.app/Contents/MacOS/firefox",
                                         arguments: ["--profile", "/p", "--new-tab", "https://example.com"])
 

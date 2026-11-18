@@ -2,7 +2,7 @@ import XCTest
 import ManiculeCore
 @testable import manicule
 
-final class LauncherWriterTests: XCTestCase {
+final class LauncherWriterTests: FocusGuardedTestCase {
     private var home: URL!
     private let docsID = WebApp.docs.chromeAppID
 
