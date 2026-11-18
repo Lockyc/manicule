@@ -6,11 +6,13 @@ let package = Package(
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+        .package(url: "https://github.com/nesevis/exhaust", exact: "1.9.0"),
     ],
     targets: [
         .target(name: "ManiculeCore"),
         .executableTarget(name: "manicule", dependencies: ["ManiculeCore", .product(name: "Sparkle", package: "Sparkle")]),
-        .testTarget(name: "ManiculeCoreTests", dependencies: ["ManiculeCore"]),
+        .testTarget(name: "ManiculeCoreTests",
+                    dependencies: ["ManiculeCore", .product(name: "Exhaust", package: "exhaust")]),
         .testTarget(name: "maniculeTests", dependencies: ["manicule", "ManiculeCore"]),
     ],
     swiftLanguageModes: [.v5]

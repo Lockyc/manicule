@@ -19,7 +19,7 @@ not just browsers; flotilla (a document workspace) is found only when installed,
 as profiles and its groups as unstored targets under ⋯, read from its manifest on every link
 (`Flotilla`; flotilla's README documents the manifest file and the `flotilla://open` URL); cooee
 (Google Meet calls in per-account profiles) is found the same way, its profiles stored targets
-read from its `profiles.json` and opened with `cooee://join` (`Cooee`). The `Browser` enum names every target kind. One Swift package, no Xcode project; Sparkle (the executable's in-app updates) is the one third-party dependency.
+read from its `profiles.json` and opened with `cooee://join` (`Cooee`). The `Browser` enum names every target kind. One Swift package, no Xcode project; Sparkle (the executable's in-app updates) is the app's one third-party dependency; Exhaust (property tests) is the tests'.
 
 **What's next:** `docs/FOLLOWUPS.md` — deliberately deferred work.
 
