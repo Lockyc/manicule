@@ -105,7 +105,8 @@ extension NSApplication {
 }
 
 /// The guard shown to fire. Nothing here can take focus: the guard refuses the key and activate
-/// calls it records, and the ordered window is opaque only while it sits off every screen.
+/// calls it records, a window left opaque sits off every screen, and the one ordered onto a
+/// screen is a single click-through point at alpha 0.01, ordered behind every window and out again.
 final class FocusGuardTests: FocusGuardedTestCase {
     override func setUp() { _ = NSApplication.shared }
 
@@ -132,6 +133,24 @@ final class FocusGuardTests: FocusGuardedTestCase {
         NSApp.activate(ignoringOtherApps: true)
         XCTAssertFalse(NSApp.isActive)
         XCTAssertEqual(FocusGuard.seen, ["the test app was activated", "the test app was activated"])
+        FocusGuard.seen = []
+    }
+
+    /// A refused call left in `seen` fails the test that made it, after the test body returns.
+    func testARefusedCallFailsTheTest() {
+        XCTExpectFailure("the refused makeKey fails the test")
+        window(at: CGPoint(x: -20_000, y: -20_000)).makeKey()
+    }
+
+    func testOrderingAnOpaqueWindowOntoAScreenIsRecorded() throws {
+        let screen = try XCTUnwrap(NSScreen.screens.first, "needs a screen to order onto")
+        let window = window(at: screen.frame.origin)
+        window.setContentSize(CGSize(width: 1, height: 1))
+        window.alphaValue = 0.01
+        window.ignoresMouseEvents = true
+        window.orderBack(nil)
+        window.orderOut(nil)
+        XCTAssertEqual(FocusGuard.seen, ["NSWindow \"\" was ordered onto a screen while opaque"])
         FocusGuard.seen = []
     }
 
