@@ -1,3 +1,5 @@
+<img src="Resources/icon.png" alt="Manicule" width="128" height="128">
+
 # Manicule
 
 [![Release](https://img.shields.io/github/v/release/lockyc/manicule?sort=semver&label=release)](https://github.com/lockyc/manicule/releases/latest)
