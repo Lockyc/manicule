@@ -67,6 +67,12 @@ Click ☞ in the menu bar and open Settings.
   profile.
 - **Recent** (☞ menu) — the last 20 links and where each went.
 
+## Limits
+
+- When Firefox is already running, a link goes to the profile that's running, whatever the target.
+- Past about 25 pinned targets, the picker strip runs off the screen.
+- Renaming a flotilla window or group breaks the rules that point at it.
+
 ## Status
 
 In use, `0.x`. What's next: [docs/FOLLOWUPS.md](docs/FOLLOWUPS.md).
