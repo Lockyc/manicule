@@ -66,10 +66,10 @@ sparkle-bin:
     @swift package resolve >/dev/null
     @echo "{{justfile_directory()}}/.build/artifacts/sparkle/Sparkle/bin"
 
-# Regenerate Resources/AppIcon.icns from Resources/AppIcon.svg (needs plate: github.com/lockyc/plate)
+# Regenerate Resources/AppIcon.icns and the README's icon.png from Resources/AppIcon.svg (needs plate: github.com/lockyc/plate)
 [group("build")]
 icon:
-    plate icon --icns "{{icns}}" Resources/AppIcon.svg
+    plate icon --icns "{{icns}}" --png 256:Resources/icon.png Resources/AppIcon.svg
 
 # Build and launch manicule
 [group("app")]
