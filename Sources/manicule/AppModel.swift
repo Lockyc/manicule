@@ -33,6 +33,8 @@ final class AppModel {
     private(set) var installed: Set<Browser> = []
     /// Why changes can't be saved (the config file couldn't be taken in safely); nil when they can.
     private(set) var saveRefusal: String?
+    /// Where an unreadable config was moved this session ([`ConfigStore.movedAside`]).
+    private(set) var movedAside: URL?
 
     @ObservationIgnored private let isInstalled: (Browser) -> Bool
 
@@ -54,6 +56,7 @@ final class AppModel {
         unreadable = ProfileDiscovery.unreadableRoots(home: home)
         var loaded = store.load(discovered: discovered)
         saveRefusal = store.saveRefusal
+        movedAside = store.movedAside
         loaded.merge(discovered: discovered)
         reloading = true
         config = loaded

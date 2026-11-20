@@ -347,6 +347,12 @@ struct GeneralTab: View {
             if let problem = Self.saveProblem(model.saveRefusal) {
                 Section { Text(problem).foregroundStyle(.red).textSelection(.enabled) }
             }
+            if let aside = model.movedAside {
+                Section {
+                    Text("Your previous settings couldn't be read and were kept in \(aside.lastPathComponent).")
+                        .foregroundStyle(.red).textSelection(.enabled)
+                }
+            }
             Section("Import") {
                 HStack {
                     Button("Import rules from Velja") { importNote = model.importVeljaRules() }

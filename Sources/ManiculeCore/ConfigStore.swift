@@ -13,6 +13,10 @@ public final class ConfigStore {
     /// Why saving is refused; nil once a clean `load` has run.
     public private(set) var saveRefusal: String? = "the configuration hasn't been loaded"
 
+    /// Where a config that couldn't be decoded was moved this session, so Settings can say where
+    /// the user's rules went; nil when none was.
+    public private(set) var movedAside: URL?
+
     public struct SaveRefused: Error, CustomStringConvertible {
         public var reason: String
         public var description: String { reason }
@@ -48,6 +52,7 @@ public final class ConfigStore {
         }
         do {
             try FileManager.default.moveItem(at: fileURL, to: aside)
+            movedAside = aside
             saveRefusal = nil
         } catch {
             refuse("\(fileURL.lastPathComponent) is unreadable and can't be moved aside (\(error.localizedDescription))")

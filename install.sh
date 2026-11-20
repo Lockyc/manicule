@@ -70,7 +70,9 @@ main() {
     # Registered so it is offered as a default browser; Manicule's Settings sets it as the default.
     "$lsregister" -f "$target" || fail "Launch Services couldn't register $target."
 
-    open "$target" || fail "$target didn't launch."
+    # A clean environment, as a Dock or Spotlight launch has: a bare `open` hands the app this
+    # shell's, which the Firefox it starts as a child would then inherit.
+    /usr/bin/env -i /usr/bin/open "$target" || fail "$target didn't launch."
     echo "✓ Manicule $version is in $target and running in the menu bar."
 }
 

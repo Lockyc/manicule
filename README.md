@@ -69,7 +69,8 @@ Click ☞ in the menu bar and open Settings.
 
 ## Limits
 
-- When Firefox is already running, a link goes to the profile that's running, whatever the target.
+- When Firefox is running another profile, a link for a different profile starts a second
+  Firefox, which closes when Manicule quits or updates.
 - Past about 25 pinned targets, the picker strip runs off the screen.
 - Renaming a flotilla window or group breaks the rules that point at it.
 

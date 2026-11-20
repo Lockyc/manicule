@@ -54,6 +54,10 @@ final class ConfigStoreTests: XCTestCase {
         _ = corrupt.load(discovered: discovered)
         XCTAssertNil(corrupt.saveRefusal, "moved aside, so nothing is lost by saving")
         XCTAssertNoThrow(try corrupt.save(Config.defaults(from: discovered)))
+        XCTAssertNil(missing.movedAside)
+        let aside = try XCTUnwrap(corrupt.movedAside, "Settings is told where the old config went")
+        XCTAssertTrue(aside.lastPathComponent.hasPrefix("config.corrupt-"))
+        XCTAssertEqual(try String(contentsOf: aside, encoding: .utf8), "{not json")
     }
 
     func testSaveBeforeLoadIsRefused() {
