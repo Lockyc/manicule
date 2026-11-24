@@ -41,10 +41,15 @@ public final class ConfigStore {
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let config = try? decoder.decode(Config.self, from: data) {
+        let decodeError: Error
+        do {
+            let config = try decoder.decode(Config.self, from: data)
             saveRefusal = nil
             return config
+        } catch {
+            decodeError = error
         }
+        Self.log.error("\(self.fileURL.lastPathComponent, privacy: .public) didn't decode: \(String(describing: decodeError), privacy: .public)")
         let stamp = String(Int(Date().timeIntervalSince1970))
         var aside = directory.appendingPathComponent("config.corrupt-\(stamp).json")
         if FileManager.default.fileExists(atPath: aside.path) {
@@ -54,6 +59,7 @@ public final class ConfigStore {
             try FileManager.default.moveItem(at: fileURL, to: aside)
             movedAside = aside
             saveRefusal = nil
+            Self.log.error("moved the undecodable config to \(aside.lastPathComponent, privacy: .public)")
         } catch {
             refuse("\(fileURL.lastPathComponent) is unreadable and can't be moved aside (\(error.localizedDescription))")
         }
