@@ -5,6 +5,10 @@ public enum Browser: String, Codable, CaseIterable, Sendable {
     /// `cooee` joins Google Meet calls in per-account profiles (`Cooee`).
     case chrome, chromium, firefox, safari, flotilla, cooee
 
+    /// Whether the user pins this browser's targets to the strip. cooee's are never pinned: a
+    /// Meet link's strip is `RouterState.meetStrip`, and no other link opens in cooee.
+    public var isPinnable: Bool { self != .cooee }
+
     public var displayName: String {
         switch self {
         case .chrome: "Chrome"

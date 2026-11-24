@@ -61,6 +61,14 @@ public struct RouterState: Sendable {
         return targets.filter { pinned.contains($0.id) && available.contains($0.id) }
     }
 
+    /// A Meet link's strip while cooee is available: every available cooee profile, pinned or not
+    /// (plain cooee when there are none), in `targets` order; empty when cooee isn't available.
+    public var meetStrip: [Target] {
+        let cooee = targets.filter { $0.browser == .cooee && available.contains($0.id) }
+        let profiles = cooee.filter { $0.id != Cooee.plainID }
+        return profiles.isEmpty ? cooee : profiles
+    }
+
     /// The strip, one group per browser.
     public var pickerGroups: [[Target]] { Target.groupedByBrowser(pickerTargets) }
 
@@ -92,7 +100,7 @@ public enum Router {
     public static func decide(_ link: IncomingLink, state: RouterState) -> Decision {
         let google = GoogleLink(url: link.url)
         let meet = Cooee.isMeet(link.url)
-        let toCooee = meet && !cooeeTargets(state).isEmpty
+        let toCooee = meet && !state.meetStrip.isEmpty
 
         if let email = google?.email,
            let t = state.targets.first(where: {
@@ -115,26 +123,19 @@ public enum Router {
         return .pick(preselected: layout.strip.first?.first?.id)
     }
 
-    /// The picker's strip and ⋯ menu for `link`. A Meet link with cooee available puts every cooee
-    /// profile on the strip, pinned or not (plain cooee when there are none), and every other
-    /// available target under ⋯; any other link gets the pinned strip and ⋯ without cooee.
+    /// The picker's strip and ⋯ menu for `link`. A Meet link with cooee available gets
+    /// `RouterState.meetStrip` and every other available target under ⋯; any other link gets the
+    /// pinned strip and ⋯ without cooee.
     public static func pickerLayout(_ link: IncomingLink, state: RouterState) -> (strip: [[Target]], more: [[Target]]) {
-        let cooee = cooeeTargets(state)
-        guard Cooee.isMeet(link.url), !cooee.isEmpty else {
+        let strip = state.meetStrip
+        guard Cooee.isMeet(link.url), !strip.isEmpty else {
             func withoutCooee(_ groups: [[Target]]) -> [[Target]] {
                 groups.filter { $0.first?.browser != .cooee }
             }
             return (withoutCooee(state.pickerGroups), withoutCooee(state.overflowGroups))
         }
-        let profiles = cooee.filter { $0.id != Cooee.plainID }
-        let strip = profiles.isEmpty ? cooee.filter { $0.id == Cooee.plainID } : profiles
         let shown = Set(strip.map(\.id))
         let more = state.targets.filter { state.available.contains($0.id) && !shown.contains($0.id) }
         return ([strip], Target.groupedByBrowser(more))
-    }
-
-    /// The available cooee targets, in `targets` order.
-    private static func cooeeTargets(_ state: RouterState) -> [Target] {
-        state.targets.filter { $0.browser == .cooee && state.available.contains($0.id) }
     }
 }

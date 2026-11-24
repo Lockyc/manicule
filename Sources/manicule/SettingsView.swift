@@ -124,11 +124,11 @@ struct TargetsTab: View {
     private func row(_ target: Target) -> some View {
         HStack(spacing: 10) {
             Toggle("Pinned", isOn: Binding(
-                get: { target.browser == .cooee || model.config.visible.contains(target.id) },
-                set: { if target.browser != .cooee { model.config.setVisible(target.id, $0) } }))
+                get: { !target.browser.isPinnable || model.config.visible.contains(target.id) },
+                set: { if target.browser.isPinnable { model.config.setVisible(target.id, $0) } }))
                 .toggleStyle(.checkbox)
-                .disabled(target.browser == .cooee)
-                .help(target.browser == .cooee ? "Meet links always show every cooee account" : "")
+                .disabled(!target.browser.isPinnable)
+                .help(target.browser.isPinnable ? "" : "Meet links always show every cooee account")
             Image(nsImage: ProfileIcon.image(for: target))
                 .resizable().frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 2) {
