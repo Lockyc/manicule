@@ -203,13 +203,15 @@ struct RulesTab: View {
                     EmptyNote(text: "No rules yet. Add one here, or press ⌥⏎ in the picker to always open that site in the chosen target.")
                 }
             }
+            // A new rule's empty condition can't match Meet, so it can't open in cooee.
+            let newRuleTarget = model.config.orderedTargets.first { $0.browser != .cooee }
             HStack {
                 Button("Add Rule") {
-                    guard let first = model.config.targets.first else { return }
-                    model.config.rules.append(.new(target: first.id))
+                    guard let newRuleTarget else { return }
+                    model.config.rules.append(.new(target: newRuleTarget.id))
                 }
-                .disabled(model.config.targets.isEmpty)
-                if model.config.targets.isEmpty {
+                .disabled(newRuleTarget == nil)
+                if newRuleTarget == nil {
                     Text("A rule needs a target; none have been found.").foregroundStyle(.secondary)
                 }
             }
