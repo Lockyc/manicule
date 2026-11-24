@@ -15,6 +15,13 @@ public struct IncomingLink: Equatable, Sendable {
     public static func isHandled(_ url: URL) -> Bool {
         ["http", "https", "file"].contains(url.scheme?.lowercased() ?? "")
     }
+
+    /// The key for per-host last choices and ⌥⏎ rules: the lowercased host, nil when the link has
+    /// none (a `file` URL), so no host rule or host memory applies to it.
+    public var hostKey: String? {
+        guard let host = url.host?.lowercased(), !host.isEmpty else { return nil }
+        return host
+    }
 }
 
 public struct RouterState: Sendable {
@@ -100,9 +107,8 @@ public enum Router {
 
         let layout = pickerLayout(link, state: state)
         let shown = Set((layout.strip + layout.more).joined().map(\.id))
-        let host = link.url.host?.lowercased().nilIfEmpty
         let lastChoices = [google?.fileID.flatMap { state.lastChoiceByDocument[$0] },
-                           host.flatMap { state.lastChoiceByHost[$0] }]
+                           link.hostKey.flatMap { state.lastChoiceByHost[$0] }]
         if let last = lastChoices.lazy.compactMap({ $0 }).first(where: shown.contains) {
             return .pick(preselected: last)
         }
@@ -131,8 +137,4 @@ public enum Router {
     private static func cooeeTargets(_ state: RouterState) -> [Target] {
         state.targets.filter { $0.browser == .cooee && state.available.contains($0.id) }
     }
-}
-
-private extension String {
-    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

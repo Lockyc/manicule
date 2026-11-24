@@ -58,6 +58,20 @@ final class PickerModelTests: XCTestCase {
         XCTAssertEqual(m.handle(.optionEnter), .finish(.open("b", always: true)))
     }
 
+    func testOptionEnterOnALinkWithoutAHostOpensPlainly() {
+        let file = IncomingLink(url: URL(string: "file:///tmp/page.html")!, sourceApp: nil,
+                                receivedAt: Date(timeIntervalSince1970: 0))
+        XCTAssertNil(file.hostKey)
+        var m = PickerModel(link: file, strip: strip, more: [], preselected: "b")
+        XCTAssertEqual(m.handle(.optionEnter), .finish(.open("b", always: false)))
+    }
+
+    func testHostKeyIsTheLowercasedHost() {
+        XCTAssertEqual(link.hostKey, "example.com")
+        let upper = IncomingLink(url: URL(string: "https://Docs.Example.COM/x")!, sourceApp: nil, receivedAt: Date())
+        XCTAssertEqual(upper.hostKey, "docs.example.com")
+    }
+
     func testCopyReturnsStrippedURL() {
         var m = model()
         XCTAssertEqual(m.handle(.copy), .finish(.copy(TrackingParameters.stripped(link.url))))

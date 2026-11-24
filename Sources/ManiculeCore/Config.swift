@@ -178,8 +178,7 @@ extension Config {
     /// Learns from a deliberate pick: last choice for the host and the Google document, and optionally an always-rule
     /// titled with the target's `name`.
     public mutating func recordPick(_ link: IncomingLink, target: Target.ID, named name: String, always: Bool) {
-        let host = link.url.host?.lowercased()
-        if let host, !host.isEmpty {
+        if let host = link.hostKey {
             lastChoiceByHost[host] = target
             if always { rules.append(.always(host: host, target: target, name: name)) }
         }

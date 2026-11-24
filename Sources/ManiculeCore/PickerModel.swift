@@ -73,7 +73,8 @@ public struct PickerModel: Sendable {
             return moreIsEnabled ? .showMore(highlighted: moreHighlight) : nil
         case .enter, .optionEnter:
             switch selection {
-            case .target(let id): return .finish(.open(id, always: key == .optionEnter))
+            // ⌥⏎ makes a host rule, so on a link without a host it opens plainly.
+            case .target(let id): return .finish(.open(id, always: key == .optionEnter && link.hostKey != nil))
             case .more: return .showMore(highlighted: moreHighlight)
             case nil: return nil
             }

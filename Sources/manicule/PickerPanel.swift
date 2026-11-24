@@ -184,7 +184,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
         guard let model else { return }
         let menu = NSMenu()
         menu.autoenablesItems = false
-        let host = model.link.url.host?.lowercased() ?? ""  // as `Config.recordPick` keys its rule
+        let host = model.link.hostKey
         var highlightedItem: NSMenuItem?
         for group in model.more {
             guard let browser = group.first?.browser else { continue }
@@ -194,7 +194,7 @@ final class PickerPanel: NSObject, @MainActor Picking {
                 let item = moreItem(title, target.id, always: false)
                 menu.addItem(item)
                 if target.id == highlighted { highlightedItem = item }
-                guard !host.isEmpty else { continue }
+                guard let host else { continue }
                 let always = moreItem("\(title) — always for \(host)", target.id, always: true)
                 always.isAlternate = true
                 always.keyEquivalentModifierMask = .option
